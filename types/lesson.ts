@@ -73,6 +73,7 @@ export interface Lesson {
   title: string;
   subject: Subject;
   topic: string;
+  book?: string; // For literature books like "A Christmas Carol"
   level: Level;
   difficulty: Difficulty;
   description: string;
@@ -89,6 +90,7 @@ export interface Task {
   type: 'lesson' | 'flashcards' | 'notes' | 'quiz' | 'timed-challenge';
   title: string;
   subject: Subject;
+  subSubject?: string; // For BTEC Sport sub-subjects like "Anatomy & Physiology"
   level: Level;
   lessonId?: string;
   completed: boolean;
@@ -117,6 +119,7 @@ export interface User {
   lessons: Lesson[];
   tasks: Task[];
   streak: number;
+  lastLoginDate?: Date;
   points: number;
   badges: string[];
   settings: UserSettings;
@@ -159,6 +162,8 @@ export interface UserSettings {
 export interface SubjectTopic {
   subject: Subject;
   topics: string[];
+  books?: string[]; // For subjects with specific books to study
+  subSubjects?: string[]; // For BTEC subjects with sub-subjects
 }
 
 export interface AppNotification {

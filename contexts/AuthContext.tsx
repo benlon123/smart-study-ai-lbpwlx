@@ -12,6 +12,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
+  updateStreak: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +28,22 @@ export const useAuth = () => {
 // Mock user database
 const mockUsers: User[] = [];
 
+// Helper function to check if two dates are consecutive days
+const areConsecutiveDays = (date1: Date, date2: Date): boolean => {
+  const day1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+  const day2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+  const diffTime = Math.abs(day2.getTime() - day1.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays === 1;
+};
+
+// Helper function to check if two dates are the same day
+const isSameDay = (date1: Date, date2: Date): boolean => {
+  return date1.getFullYear() === date2.getFullYear() &&
+         date1.getMonth() === date2.getMonth() &&
+         date1.getDate() === date2.getDate();
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +52,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkSession();
   }, []);
 
+  // Update streak when user logs in
+  useEffect(() => {
+    if (user) {
+      updateStreak();
+    }
+  }, [user?.id]);
+
   const checkSession = async () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -42,6 +66,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Error checking session:', error);
       setIsLoading(false);
+    }
+  };
+
+  const updateStreak = () => {
+    if (!user) return;
+
+    const today = new Date();
+    const lastLogin = user.lastLoginDate ? new Date(user.lastLoginDate) : null;
+
+    console.log('Updating streak - Today:', today, 'Last Login:', lastLogin);
+
+    if (!lastLogin) {
+      // First login ever
+      const updatedUser = {
+        ...user,
+        streak: 1,
+        lastLoginDate: today,
+      };
+      setUser(updatedUser);
+      updateUserInDatabase(updatedUser);
+      console.log('First login - Streak set to 1');
+      return;
+    }
+
+    if (isSameDay(today, lastLogin)) {
+      // Already logged in today, no change
+      console.log('Already logged in today - No streak change');
+      return;
+    }
+
+    if (areConsecutiveDays(lastLogin, today)) {
+      // Consecutive day login - increment streak
+      const updatedUser = {
+        ...user,
+        streak: user.streak + 1,
+        lastLoginDate: today,
+      };
+      setUser(updatedUser);
+      updateUserInDatabase(updatedUser);
+      console.log('Consecutive day login - Streak incremented to:', updatedUser.streak);
+    } else {
+      // Missed a day - reset streak to 1
+      const updatedUser = {
+        ...user,
+        streak: 1,
+        lastLoginDate: today,
+      };
+      setUser(updatedUser);
+      updateUserInDatabase(updatedUser);
+      console.log('Missed a day - Streak reset to 1');
+    }
+  };
+
+  const updateUserInDatabase = (updatedUser: User) => {
+    const userIndex = mockUsers.findIndex(u => u.id === updatedUser.id);
+    if (userIndex !== -1) {
+      mockUsers[userIndex] = updatedUser;
     }
   };
 
@@ -56,9 +137,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isPremium: false,
         lessons: [],
         tasks: [],
-        streak: 0,
+        streak: 1,
         points: 0,
         badges: [],
+        lastLoginDate: new Date(),
         settings: {
           accessibility: {
             dyslexiaFont: false,
@@ -117,9 +199,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isPremium: false,
           lessons: [],
           tasks: [],
-          streak: 5,
+          streak: 0,
           points: 250,
           badges: ['First Lesson', 'Week Streak'],
+          lastLoginDate: undefined,
           settings: {
             accessibility: {
               dyslexiaFont: false,
@@ -190,12 +273,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) {
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
-      
-      const userIndex = mockUsers.findIndex(u => u.id === user.id);
-      if (userIndex !== -1) {
-        mockUsers[userIndex] = updatedUser;
-      }
-      
+      updateUserInDatabase(updatedUser);
       console.log('User updated:', updatedUser);
     }
   };
@@ -214,6 +292,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signOut,
         forgotPassword,
         updateUser,
+        updateStreak,
       }}
     >
       {children}

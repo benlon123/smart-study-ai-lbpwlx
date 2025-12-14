@@ -17,7 +17,8 @@ interface LessonContextType {
     subject: Subject,
     topic: string,
     level: Level,
-    difficulty: Difficulty
+    difficulty: Difficulty,
+    book?: string
   ) => Promise<Lesson>;
   generateNotes: (lessonId: string, subtopic?: string) => Promise<void>;
   generateFlashcards: (lessonId: string, count: 10 | 20 | 30) => Promise<void>;
@@ -45,13 +46,14 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     subject: Subject,
     topic: string,
     level: Level,
-    difficulty: Difficulty
+    difficulty: Difficulty,
+    book?: string
   ): Promise<Lesson> => {
     try {
       console.log('Creating lesson container only (no content)...');
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const newLesson = generateMockLesson(name, subject, topic, level, difficulty);
+      const newLesson = generateMockLesson(name, subject, topic, level, difficulty, book);
       setLessons(prev => [newLesson, ...prev]);
       
       console.log('Lesson container created:', newLesson);
@@ -81,7 +83,8 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         lesson.subject, 
         subtopic || lesson.topic, 
         lesson.level, 
-        lesson.difficulty
+        lesson.difficulty,
+        lesson.book
       );
 
       setLessons(prev =>
@@ -114,7 +117,7 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const flashcards = generateMockFlashcards(lesson.subject, lesson.topic, count);
+      const flashcards = generateMockFlashcards(lesson.subject, lesson.topic, count, lesson.book);
 
       setLessons(prev =>
         prev.map(l =>
@@ -146,8 +149,8 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       await new Promise(resolve => setTimeout(resolve, 2500));
       
-      const examQuestions = generateMockExamQuestions(lesson.subject, lesson.topic, lesson.difficulty, 5);
-      const quiz = generateMockQuiz(lesson.subject, lesson.topic, lesson.difficulty, lessonId);
+      const examQuestions = generateMockExamQuestions(lesson.subject, lesson.topic, lesson.difficulty, 5, lesson.book);
+      const quiz = generateMockQuiz(lesson.subject, lesson.topic, lesson.difficulty, lessonId, lesson.book);
 
       setLessons(prev =>
         prev.map(l =>

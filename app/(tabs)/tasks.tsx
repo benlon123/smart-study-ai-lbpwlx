@@ -25,14 +25,226 @@ interface TaskItem {
   title: string;
   description: string;
   subject: Subject;
+  subSubject?: string;
   level: Level;
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
   points: number;
 }
 
-// Generate content-based tasks for different subjects
-const generateContentBasedTasks = (subject: Subject, level: Level): TaskItem[] => {
+// Generate content-based tasks for different subjects and sub-subjects
+const generateContentBasedTasks = (subject: Subject, level: Level, subSubject?: string): TaskItem[] => {
+  // BTEC Sport sub-subject specific tasks
+  if (subject === 'BTEC Sport' && subSubject) {
+    const btecSportTasks: Record<string, TaskItem[]> = {
+      'Anatomy & Physiology': [
+        {
+          id: 'btec-sport-anatomy-1',
+          type: 'practice',
+          title: 'Identify Major Muscle Groups',
+          description: 'Learn the location and function of major muscles used in sports performance',
+          subject: 'BTEC Sport',
+          subSubject: 'Anatomy & Physiology',
+          level,
+          completed: false,
+          priority: 'high',
+          points: 60,
+        },
+        {
+          id: 'btec-sport-anatomy-2',
+          type: 'practice',
+          title: 'Understand Energy Systems',
+          description: 'Study aerobic, anaerobic, and ATP-PC energy systems in different sports',
+          subject: 'BTEC Sport',
+          subSubject: 'Anatomy & Physiology',
+          level,
+          completed: false,
+          priority: 'high',
+          points: 65,
+        },
+        {
+          id: 'btec-sport-anatomy-3',
+          type: 'review',
+          title: 'Analyze Cardiovascular Responses',
+          description: 'Examine how the heart and blood vessels respond to exercise',
+          subject: 'BTEC Sport',
+          subSubject: 'Anatomy & Physiology',
+          level,
+          completed: false,
+          priority: 'medium',
+          points: 55,
+        },
+        {
+          id: 'btec-sport-anatomy-4',
+          type: 'practice',
+          title: 'Study Respiratory System in Exercise',
+          description: 'Understand breathing mechanics and gas exchange during physical activity',
+          subject: 'BTEC Sport',
+          subSubject: 'Anatomy & Physiology',
+          level,
+          completed: false,
+          priority: 'high',
+          points: 60,
+        },
+      ],
+      'Fitness Testing': [
+        {
+          id: 'btec-sport-fitness-1',
+          type: 'practice',
+          title: 'Conduct VO2 Max Testing',
+          description: 'Learn protocols for measuring maximum oxygen uptake',
+          subject: 'BTEC Sport',
+          subSubject: 'Fitness Testing',
+          level,
+          completed: false,
+          priority: 'high',
+          points: 55,
+        },
+        {
+          id: 'btec-sport-fitness-2',
+          type: 'practice',
+          title: 'Perform Flexibility Assessments',
+          description: 'Practice sit-and-reach and other flexibility testing methods',
+          subject: 'BTEC Sport',
+          subSubject: 'Fitness Testing',
+          level,
+          completed: false,
+          priority: 'medium',
+          points: 50,
+        },
+        {
+          id: 'btec-sport-fitness-3',
+          type: 'review',
+          title: 'Analyze Test Results',
+          description: 'Interpret fitness test data and provide recommendations',
+          subject: 'BTEC Sport',
+          subSubject: 'Fitness Testing',
+          level,
+          completed: false,
+          priority: 'high',
+          points: 60,
+        },
+      ],
+      'Training Methods': [
+        {
+          id: 'btec-sport-training-1',
+          type: 'practice',
+          title: 'Design Interval Training Programs',
+          description: 'Create effective interval training sessions for different sports',
+          subject: 'BTEC Sport',
+          subSubject: 'Training Methods',
+          level,
+          completed: false,
+          priority: 'high',
+          points: 65,
+        },
+        {
+          id: 'btec-sport-training-2',
+          type: 'practice',
+          title: 'Apply Plyometric Exercises',
+          description: 'Learn explosive power training techniques',
+          subject: 'BTEC Sport',
+          subSubject: 'Training Methods',
+          level,
+          completed: false,
+          priority: 'medium',
+          points: 55,
+        },
+        {
+          id: 'btec-sport-training-3',
+          type: 'review',
+          title: 'Understand Periodization',
+          description: 'Study training cycles and progressive overload principles',
+          subject: 'BTEC Sport',
+          subSubject: 'Training Methods',
+          level,
+          completed: false,
+          priority: 'high',
+          points: 60,
+        },
+      ],
+      'Sports Psychology': [
+        {
+          id: 'btec-sport-psych-1',
+          type: 'practice',
+          title: 'Apply Motivation Theories',
+          description: 'Understand intrinsic and extrinsic motivation in sports',
+          subject: 'BTEC Sport',
+          subSubject: 'Sports Psychology',
+          level,
+          completed: false,
+          priority: 'high',
+          points: 55,
+        },
+        {
+          id: 'btec-sport-psych-2',
+          type: 'review',
+          title: 'Study Anxiety Management',
+          description: 'Learn techniques to manage pre-competition anxiety',
+          subject: 'BTEC Sport',
+          subSubject: 'Sports Psychology',
+          level,
+          completed: false,
+          priority: 'medium',
+          points: 50,
+        },
+        {
+          id: 'btec-sport-psych-3',
+          type: 'practice',
+          title: 'Develop Mental Imagery Skills',
+          description: 'Practice visualization techniques for performance enhancement',
+          subject: 'BTEC Sport',
+          subSubject: 'Sports Psychology',
+          level,
+          completed: false,
+          priority: 'high',
+          points: 60,
+        },
+      ],
+      'Sports Nutrition': [
+        {
+          id: 'btec-sport-nutrition-1',
+          type: 'practice',
+          title: 'Plan Pre-Competition Meals',
+          description: 'Design optimal nutrition strategies before events',
+          subject: 'BTEC Sport',
+          subSubject: 'Sports Nutrition',
+          level,
+          completed: false,
+          priority: 'high',
+          points: 55,
+        },
+        {
+          id: 'btec-sport-nutrition-2',
+          type: 'review',
+          title: 'Understand Macronutrients',
+          description: 'Study the role of carbs, proteins, and fats in performance',
+          subject: 'BTEC Sport',
+          subSubject: 'Sports Nutrition',
+          level,
+          completed: false,
+          priority: 'medium',
+          points: 50,
+        },
+        {
+          id: 'btec-sport-nutrition-3',
+          type: 'practice',
+          title: 'Analyze Hydration Strategies',
+          description: 'Learn optimal fluid intake before, during, and after exercise',
+          subject: 'BTEC Sport',
+          subSubject: 'Sports Nutrition',
+          level,
+          completed: false,
+          priority: 'high',
+          points: 60,
+        },
+      ],
+    };
+
+    return btecSportTasks[subSubject] || [];
+  }
+
+  // Regular subject tasks (existing code)
   const taskMap: Record<string, TaskItem[]> = {
     'English Language': [
       {
@@ -279,41 +491,6 @@ const generateContentBasedTasks = (subject: Subject, level: Level): TaskItem[] =
         points: 55,
       },
     ],
-    'BTEC Sport': [
-      {
-        id: 'btec-sport-1',
-        type: 'practice',
-        title: 'Study Musculoskeletal System in Sport',
-        description: 'Analyze how bones, muscles, and joints work together in athletic performance',
-        subject: 'BTEC Sport',
-        level,
-        completed: false,
-        priority: 'high',
-        points: 55,
-      },
-      {
-        id: 'btec-sport-2',
-        type: 'review',
-        title: 'Understand Energy Systems',
-        description: 'Learn about aerobic, lactic acid, and ATP-PC systems in different sports',
-        subject: 'BTEC Sport',
-        level,
-        completed: false,
-        priority: 'medium',
-        points: 50,
-      },
-      {
-        id: 'btec-sport-3',
-        type: 'practice',
-        title: 'Analyze Training Methods',
-        description: 'Study interval training, circuit training, and plyometrics for performance',
-        subject: 'BTEC Sport',
-        level,
-        completed: false,
-        priority: 'high',
-        points: 60,
-      },
-    ],
   };
 
   // Return tasks for the subject, or generate generic content-based tasks
@@ -365,17 +542,28 @@ export default function TasksScreen() {
   const { lessons } = useLesson();
   const [selectedLevel, setSelectedLevel] = useState<Level>('GCSE');
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [selectedSubSubject, setSelectedSubSubject] = useState<string | null>(null);
   const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
+  const [showSubSubjectDropdown, setShowSubSubjectDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [tasks, setTasks] = useState<TaskItem[]>([]);
 
-  // Generate tasks based on selected level and subject
+  // Get sub-subjects for selected subject
+  const currentSubjectData = subjectTopics.find(item => item.subject === selectedSubject);
+  const hasSubSubjects = currentSubjectData?.subSubjects && currentSubjectData.subSubjects.length > 0;
+
+  // Generate tasks based on selected level, subject, and sub-subject
   useEffect(() => {
     const allTasks: TaskItem[] = [];
     
     if (selectedSubject) {
-      // Generate tasks for the selected subject
-      allTasks.push(...generateContentBasedTasks(selectedSubject, selectedLevel));
+      if (hasSubSubjects && selectedSubSubject) {
+        // Generate tasks for specific sub-subject
+        allTasks.push(...generateContentBasedTasks(selectedSubject, selectedLevel, selectedSubSubject));
+      } else if (!hasSubSubjects) {
+        // Generate tasks for subject without sub-subjects
+        allTasks.push(...generateContentBasedTasks(selectedSubject, selectedLevel));
+      }
     } else {
       // Generate tasks for all subjects at the selected level
       const subjects = getSubjectsForLevel(selectedLevel);
@@ -385,7 +573,7 @@ export default function TasksScreen() {
     }
     
     setTasks(allTasks);
-  }, [selectedLevel, selectedSubject]);
+  }, [selectedLevel, selectedSubject, selectedSubSubject]);
 
   if (!isAuthenticated) {
     return (
@@ -421,7 +609,8 @@ export default function TasksScreen() {
   const filteredTasks = tasks.filter(task => {
     const levelMatch = task.level === selectedLevel;
     const subjectMatch = selectedSubject ? task.subject === selectedSubject : true;
-    return levelMatch && subjectMatch;
+    const subSubjectMatch = selectedSubSubject ? task.subSubject === selectedSubSubject : true;
+    return levelMatch && subjectMatch && subSubjectMatch;
   });
 
   const completedTasksCount = filteredTasks.filter(t => t.completed).length;
@@ -461,6 +650,7 @@ export default function TasksScreen() {
               ]}
               onPress={() => {
                 setSelectedSubject(null);
+                setSelectedSubSubject(null);
                 setShowSubjectDropdown(false);
               }}
             >
@@ -491,6 +681,7 @@ export default function TasksScreen() {
                   ]}
                   onPress={() => {
                     setSelectedSubject(subject);
+                    setSelectedSubSubject(null);
                     setShowSubjectDropdown(false);
                   }}
                 >
@@ -503,6 +694,97 @@ export default function TasksScreen() {
                     {subject}
                   </Text>
                   {selectedSubject === subject && (
+                    <IconSymbol
+                      ios_icon_name="checkmark"
+                      android_material_icon_name="check"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  )}
+                </TouchableOpacity>
+              </React.Fragment>
+            ))}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
+  const renderSubSubjectDropdown = () => (
+    <Modal
+      visible={showSubSubjectDropdown}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowSubSubjectDropdown(false)}
+    >
+      <TouchableOpacity
+        style={styles.dropdownOverlay}
+        activeOpacity={1}
+        onPress={() => setShowSubSubjectDropdown(false)}
+      >
+        <View style={styles.dropdownContainer}>
+          <View style={styles.dropdownHeader}>
+            <Text style={styles.dropdownTitle}>Select Sub-Subject</Text>
+            <TouchableOpacity onPress={() => setShowSubSubjectDropdown(false)}>
+              <IconSymbol
+                ios_icon_name="xmark"
+                android_material_icon_name="close"
+                size={20}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.dropdownScroll} showsVerticalScrollIndicator={false}>
+            <TouchableOpacity
+              style={[
+                styles.dropdownItem,
+                selectedSubSubject === null && styles.dropdownItemSelected,
+              ]}
+              onPress={() => {
+                setSelectedSubSubject(null);
+                setShowSubSubjectDropdown(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.dropdownItemText,
+                  selectedSubSubject === null && styles.dropdownItemTextSelected,
+                ]}
+              >
+                All Sub-Subjects
+              </Text>
+              {selectedSubSubject === null && (
+                <IconSymbol
+                  ios_icon_name="checkmark"
+                  android_material_icon_name="check"
+                  size={20}
+                  color={colors.primary}
+                />
+              )}
+            </TouchableOpacity>
+
+            {currentSubjectData?.subSubjects?.map((subSubject, index) => (
+              <React.Fragment key={index}>
+                <TouchableOpacity
+                  style={[
+                    styles.dropdownItem,
+                    selectedSubSubject === subSubject && styles.dropdownItemSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedSubSubject(subSubject);
+                    setShowSubSubjectDropdown(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.dropdownItemText,
+                      selectedSubSubject === subSubject && styles.dropdownItemTextSelected,
+                    ]}
+                  >
+                    {subSubject}
+                  </Text>
+                  {selectedSubSubject === subSubject && (
                     <IconSymbol
                       ios_icon_name="checkmark"
                       android_material_icon_name="check"
@@ -592,6 +874,7 @@ export default function TasksScreen() {
                   onPress={() => {
                     setSelectedLevel(level);
                     setSelectedSubject(null);
+                    setSelectedSubSubject(null);
                   }}
                 >
                   <Text
@@ -625,6 +908,26 @@ export default function TasksScreen() {
             />
           </TouchableOpacity>
         </View>
+
+        {hasSubSubjects && selectedSubject && (
+          <View style={styles.filtersSection}>
+            <Text style={styles.filterLabel}>Sub-Subject</Text>
+            <TouchableOpacity
+              style={styles.subjectDropdownButton}
+              onPress={() => setShowSubSubjectDropdown(true)}
+            >
+              <Text style={styles.subjectDropdownButtonText}>
+                {selectedSubSubject || 'All Sub-Subjects'}
+              </Text>
+              <IconSymbol
+                ios_icon_name="chevron.down"
+                android_material_icon_name="expand-more"
+                size={20}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
@@ -660,7 +963,9 @@ export default function TasksScreen() {
               />
               <Text style={styles.emptyStateTitle}>No Tasks Found</Text>
               <Text style={styles.emptyStateText}>
-                No tasks for {selectedSubject || 'any subject'} at {selectedLevel} level
+                {hasSubSubjects && selectedSubject && !selectedSubSubject
+                  ? `Please select a sub-subject for ${selectedSubject}`
+                  : `No tasks for ${selectedSubject || 'any subject'} at ${selectedLevel} level`}
               </Text>
             </View>
           ) : (
@@ -701,6 +1006,11 @@ export default function TasksScreen() {
                         <View style={styles.taskBadge}>
                           <Text style={styles.taskBadgeText}>{task.subject}</Text>
                         </View>
+                        {task.subSubject && (
+                          <View style={[styles.taskBadge, { backgroundColor: colors.highlight + '30' }]}>
+                            <Text style={styles.taskBadgeText}>{task.subSubject}</Text>
+                          </View>
+                        )}
                         <View style={styles.taskBadge}>
                           <Text style={styles.taskBadgeText}>{task.level}</Text>
                         </View>
@@ -742,12 +1052,15 @@ export default function TasksScreen() {
             <Text style={styles.aiTitle}>AI Suggestions</Text>
           </View>
           <Text style={styles.aiText}>
-            Focus on practicing {selectedSubject || 'core concepts'} to strengthen your understanding. Complete {remainingTasksCount} more {remainingTasksCount === 1 ? 'task' : 'tasks'} today to maintain your streak!
+            {selectedSubSubject 
+              ? `Focus on ${selectedSubSubject} within ${selectedSubject} to strengthen your understanding.`
+              : `Focus on practicing ${selectedSubject || 'core concepts'} to strengthen your understanding.`} Complete {remainingTasksCount} more {remainingTasksCount === 1 ? 'task' : 'tasks'} today to maintain your streak!
           </Text>
         </View>
       </ScrollView>
 
       {renderSubjectDropdown()}
+      {renderSubSubjectDropdown()}
     </View>
   );
 }
@@ -765,8 +1078,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: 24,
+    paddingBottom: 20,
   },
   headerTitle: {
     fontSize: 28,
@@ -791,7 +1104,7 @@ const styles = StyleSheet.create({
   viewModeContainer: {
     flexDirection: 'row',
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 24,
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 4,
@@ -815,7 +1128,7 @@ const styles = StyleSheet.create({
   },
   filtersSection: {
     paddingHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   filterLabel: {
     fontSize: 14,
@@ -916,7 +1229,7 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 28,
     gap: 12,
   },
   statCard: {
@@ -938,7 +1251,7 @@ const styles = StyleSheet.create({
   },
   tasksSection: {
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 28,
   },
   tasksList: {
     marginTop: 16,
@@ -987,6 +1300,7 @@ const styles = StyleSheet.create({
   taskMeta: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
   },
   taskBadge: {

@@ -47,6 +47,29 @@ export default function AnalyticsScreen() {
     ? Math.round(lessons.reduce((sum, lesson) => sum + lesson.progress, 0) / lessons.length)
     : 0;
 
+  // Calculate subject-specific data
+  const subjectData = lessons.reduce((acc, lesson) => {
+    if (!acc[lesson.subject]) {
+      acc[lesson.subject] = {
+        lessonCount: 0,
+        flashcardCount: 0,
+        avgProgress: 0,
+        totalProgress: 0,
+      };
+    }
+    acc[lesson.subject].lessonCount++;
+    acc[lesson.subject].flashcardCount += lesson.flashcards.length;
+    acc[lesson.subject].totalProgress += lesson.progress;
+    acc[lesson.subject].avgProgress = Math.round(
+      acc[lesson.subject].totalProgress / acc[lesson.subject].lessonCount
+    );
+    return acc;
+  }, {} as Record<string, { lessonCount: number; flashcardCount: number; avgProgress: number; totalProgress: number }>);
+
+  const topSubjects = Object.entries(subjectData)
+    .sort((a, b) => b[1].lessonCount - a[1].lessonCount)
+    .slice(0, 5);
+
   return (
     <View style={commonStyles.container}>
       <ScrollView
@@ -137,65 +160,85 @@ export default function AnalyticsScreen() {
         <View style={styles.section}>
           <Text style={commonStyles.subtitle}>Progress by Subject</Text>
           <View style={styles.subjectsList}>
-            {['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English Language'].map((subject, index) => (
-              <React.Fragment key={index}>
-                <View style={styles.subjectCard}>
-                  <View style={styles.subjectHeader}>
-                    <Text style={styles.subjectName}>{subject}</Text>
-                    <Text style={styles.subjectProgress}>
-                      {Math.floor(Math.random() * 40 + 60)}%
-                    </Text>
+            {topSubjects.length > 0 ? (
+              topSubjects.map(([subject, data], index) => (
+                <React.Fragment key={index}>
+                  <View style={styles.subjectCard}>
+                    <View style={styles.subjectHeader}>
+                      <Text style={styles.subjectName}>{subject}</Text>
+                      <Text style={styles.subjectProgress}>
+                        {data.avgProgress}%
+                      </Text>
+                    </View>
+                    <View style={styles.subjectProgressBar}>
+                      <View
+                        style={[
+                          styles.subjectProgressFill,
+                          { width: `${data.avgProgress}%` },
+                        ]}
+                      />
+                    </View>
+                    <View style={styles.subjectStats}>
+                      <Text style={styles.subjectStatText}>
+                        {data.lessonCount} {data.lessonCount === 1 ? 'lesson' : 'lessons'}
+                      </Text>
+                      <Text style={styles.subjectStatText}>
+                        {data.flashcardCount} flashcards
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.subjectProgressBar}>
-                    <View
-                      style={[
-                        styles.subjectProgressFill,
-                        { width: `${Math.floor(Math.random() * 40 + 60)}%` },
-                      ]}
-                    />
-                  </View>
-                  <View style={styles.subjectStats}>
-                    <Text style={styles.subjectStatText}>
-                      {Math.floor(Math.random() * 5 + 1)} lessons
-                    </Text>
-                    <Text style={styles.subjectStatText}>
-                      {Math.floor(Math.random() * 20 + 10)} flashcards
-                    </Text>
-                  </View>
-                </View>
-              </React.Fragment>
-            ))}
+                </React.Fragment>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>
+                  No subject data available yet. Create lessons to see your progress!
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={commonStyles.subtitle}>Performance by Difficulty</Text>
           <View style={styles.difficultyGrid}>
-            {['Easy', 'Normal', 'Hard'].map((difficulty, index) => (
-              <React.Fragment key={index}>
-                <View style={styles.difficultyCard}>
-                  <View style={styles.difficultyHeader}>
-                    <IconSymbol
-                      ios_icon_name="chart.line.uptrend.xyaxis"
-                      android_material_icon_name="trending-up"
-                      size={24}
-                      color={
-                        difficulty === 'Easy'
-                          ? colors.success
-                          : difficulty === 'Normal'
-                          ? colors.warning
-                          : colors.error
-                      }
-                    />
+            {['Easy', 'Normal', 'Hard'].map((difficulty, index) => {
+              const difficultyLessons = lessons.filter(l => l.difficulty === difficulty);
+              const avgScore = difficultyLessons.length > 0
+                ? Math.round(
+                    difficultyLessons.reduce((sum, l) => sum + l.progress, 0) / difficultyLessons.length
+                  )
+                : 0;
+
+              return (
+                <React.Fragment key={index}>
+                  <View style={styles.difficultyCard}>
+                    <View style={styles.difficultyHeader}>
+                      <IconSymbol
+                        ios_icon_name="chart.line.uptrend.xyaxis"
+                        android_material_icon_name="trending-up"
+                        size={24}
+                        color={
+                          difficulty === 'Easy'
+                            ? colors.success
+                            : difficulty === 'Normal'
+                            ? colors.warning
+                            : colors.error
+                        }
+                      />
+                    </View>
+                    <Text style={styles.difficultyName}>{difficulty}</Text>
+                    <Text style={styles.difficultyScore}>
+                      {avgScore}%
+                    </Text>
+                    <Text style={styles.difficultyLabel}>Avg. Progress</Text>
+                    <Text style={styles.difficultyCount}>
+                      {difficultyLessons.length} {difficultyLessons.length === 1 ? 'lesson' : 'lessons'}
+                    </Text>
                   </View>
-                  <Text style={styles.difficultyName}>{difficulty}</Text>
-                  <Text style={styles.difficultyScore}>
-                    {Math.floor(Math.random() * 30 + 70)}%
-                  </Text>
-                  <Text style={styles.difficultyLabel}>Avg. Score</Text>
-                </View>
-              </React.Fragment>
-            ))}
+                </React.Fragment>
+              );
+            })}
           </View>
         </View>
 
@@ -209,24 +252,46 @@ export default function AnalyticsScreen() {
             />
             <Text style={commonStyles.subtitle}>AI Insights</Text>
           </View>
-          <View style={styles.insightCard}>
-            <Text style={styles.insightTitle}>🎯 Focus Areas</Text>
-            <Text style={styles.insightText}>
-              You&apos;re performing well in Mathematics! Consider spending more time on Chemistry topics to improve your overall score.
-            </Text>
-          </View>
-          <View style={styles.insightCard}>
-            <Text style={styles.insightTitle}>📈 Progress Trend</Text>
-            <Text style={styles.insightText}>
-              Your study consistency has improved by 25% this week. Keep up the great work!
-            </Text>
-          </View>
-          <View style={styles.insightCard}>
-            <Text style={styles.insightTitle}>💡 Recommendation</Text>
-            <Text style={styles.insightText}>
-              Try reviewing flashcards in the morning for better retention. Studies show morning review improves recall by 30%.
-            </Text>
-          </View>
+          
+          {lessons.length > 0 ? (
+            <>
+              <View style={styles.insightCard}>
+                <Text style={styles.insightTitle}>🎯 Focus Areas</Text>
+                <Text style={styles.insightText}>
+                  {topSubjects.length > 0
+                    ? `You're performing well in ${topSubjects[0][0]}! ${
+                        topSubjects.length > 1 && topSubjects[1][1].avgProgress < 70
+                          ? `Consider spending more time on ${topSubjects[1][0]} to improve your overall score.`
+                          : 'Keep up the great work across all subjects!'
+                      }`
+                    : 'Start creating lessons to get personalized insights!'}
+                </Text>
+              </View>
+              <View style={styles.insightCard}>
+                <Text style={styles.insightTitle}>📈 Progress Trend</Text>
+                <Text style={styles.insightText}>
+                  Your study consistency is excellent with a {user?.streak || 0}-day streak! 
+                  {avgProgress >= 70
+                    ? ' You\'re making great progress across your lessons.'
+                    : ' Focus on completing more lessons to boost your overall progress.'}
+                </Text>
+              </View>
+              <View style={styles.insightCard}>
+                <Text style={styles.insightTitle}>💡 Recommendation</Text>
+                <Text style={styles.insightText}>
+                  {totalFlashcards > 0
+                    ? 'Try reviewing flashcards in the morning for better retention. Studies show morning review improves recall by 30%.'
+                    : 'Generate flashcards for your lessons to improve retention and test your knowledge!'}
+                </Text>
+              </View>
+            </>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>
+                Create your first lesson to start receiving personalized AI insights!
+              </Text>
+            </View>
+          )}
         </View>
 
         {!user?.isPremium && (
@@ -261,8 +326,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: 24,
+    paddingBottom: 20,
   },
   headerTitle: {
     fontSize: 28,
@@ -273,7 +338,7 @@ const styles = StyleSheet.create({
   periodSelector: {
     flexDirection: 'row',
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 24,
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 4,
@@ -297,7 +362,7 @@ const styles = StyleSheet.create({
   },
   overviewCard: {
     marginHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 28,
     backgroundColor: colors.card,
     padding: 24,
     borderRadius: 16,
@@ -350,7 +415,7 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 28,
   },
   subjectsList: {
     marginTop: 16,
@@ -427,6 +492,12 @@ const styles = StyleSheet.create({
   difficultyLabel: {
     fontSize: 11,
     color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  difficultyCount: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
   },
   aiInsightsHeader: {
     flexDirection: 'row',
@@ -450,6 +521,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: colors.textSecondary,
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   premiumBanner: {
     marginHorizontal: 20,

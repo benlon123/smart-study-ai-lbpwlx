@@ -32,6 +32,7 @@ export default function CreateLessonScreen() {
   const [lessonName, setLessonName] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -59,6 +60,13 @@ export default function CreateLessonScreen() {
       return;
     }
 
+    // Check if book selection is required but not selected
+    const subjectData = subjectTopics.find(item => item.subject === selectedSubject);
+    if (subjectData?.books && subjectData.books.length > 0 && !selectedBook) {
+      Alert.alert('Book Required', 'Please select a book for this subject');
+      return;
+    }
+
     console.log('Starting lesson creation process...');
     setShowSubjectModal(false);
     setIsGenerating(true);
@@ -70,6 +78,7 @@ export default function CreateLessonScreen() {
         selectedTopic,
         selectedLevel,
         selectedDifficulty,
+        selectedBook,
       });
 
       const newLesson = await createLesson(
@@ -77,27 +86,22 @@ export default function CreateLessonScreen() {
         selectedSubject,
         selectedTopic,
         selectedLevel!,
-        selectedDifficulty!
+        selectedDifficulty!,
+        selectedBook || undefined
       );
       
       console.log('Lesson created successfully:', newLesson);
       
-      // Reset generating state before navigation
       setIsGenerating(false);
-      
-      // Navigate back to home first
       router.back();
       
-      // Small delay to ensure navigation completes
       setTimeout(() => {
-        // Then navigate to the lesson detail page
         router.push(`/lesson/${newLesson.id}`);
       }, 100);
       
-      // Show success message
       Alert.alert(
         'Lesson Created! 📚',
-        'Your lesson container has been created. You can now generate Notes, Flashcards, or Quiz inside the lesson.',
+        `Your lesson container has been created${selectedBook ? ` for ${selectedBook}` : ''}. You can now generate Notes, Flashcards, or Quiz inside the lesson.`,
         [{ text: 'OK' }]
       );
     } catch (error) {
@@ -210,6 +214,9 @@ export default function CreateLessonScreen() {
     </View>
   );
 
+  const currentSubjectData = subjectTopics.find(item => item.subject === selectedSubject);
+  const hasBooks = currentSubjectData?.books && currentSubjectData.books.length > 0;
+
   const renderSubjectModal = () => (
     <Modal
       visible={showSubjectModal}
@@ -251,6 +258,7 @@ export default function CreateLessonScreen() {
                   onPress={() => {
                     setSelectedSubject(item.subject);
                     setSelectedTopic(null);
+                    setSelectedBook(null);
                   }}
                 >
                   <Text
@@ -266,9 +274,40 @@ export default function CreateLessonScreen() {
             ))}
           </View>
 
-          {selectedSubject && (
+          {selectedSubject && hasBooks && (
             <>
-              <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>Choose Topic</Text>
+              <Text style={[styles.modalSectionTitle, { marginTop: 32 }]}>Choose Book</Text>
+              <Text style={styles.modalSectionDescription}>
+                Select the specific book you&apos;re studying for {selectedSubject}
+              </Text>
+              <View style={styles.bookGrid}>
+                {currentSubjectData?.books?.map((book, index) => (
+                  <React.Fragment key={index}>
+                    <TouchableOpacity
+                      style={[
+                        styles.bookChip,
+                        selectedBook === book && styles.bookChipSelected,
+                      ]}
+                      onPress={() => setSelectedBook(book)}
+                    >
+                      <Text
+                        style={[
+                          styles.bookChipText,
+                          selectedBook === book && styles.bookChipTextSelected,
+                        ]}
+                      >
+                        {book}
+                      </Text>
+                    </TouchableOpacity>
+                  </React.Fragment>
+                ))}
+              </View>
+            </>
+          )}
+
+          {selectedSubject && (!hasBooks || selectedBook) && (
+            <>
+              <Text style={[styles.modalSectionTitle, { marginTop: 32 }]}>Choose Topic</Text>
               <View style={styles.topicGrid}>
                 {subjectTopics
                   .find(item => item.subject === selectedSubject)
@@ -302,10 +341,10 @@ export default function CreateLessonScreen() {
             style={[
               buttonStyles.primary,
               styles.generateButton,
-              (!selectedSubject || !selectedTopic) && styles.generateButtonDisabled,
+              (!selectedSubject || !selectedTopic || (hasBooks && !selectedBook)) && styles.generateButtonDisabled,
             ]}
             onPress={handleSubjectTopicSelect}
-            disabled={!selectedSubject || !selectedTopic}
+            disabled={!selectedSubject || !selectedTopic || (hasBooks && !selectedBook)}
           >
             <IconSymbol
               ios_icon_name="sparkles"
@@ -574,7 +613,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
+    marginBottom: 12,
+  },
+  modalSectionDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
     marginBottom: 16,
+    lineHeight: 20,
   },
   subjectGrid: {
     flexDirection: 'row',
@@ -599,6 +644,31 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   subjectChipTextSelected: {
+    color: '#FFFFFF',
+  },
+  bookGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  bookChip: {
+    backgroundColor: colors.card,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.highlight + '50',
+  },
+  bookChipSelected: {
+    backgroundColor: colors.highlight,
+    borderColor: colors.highlight,
+  },
+  bookChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  bookChipTextSelected: {
     color: '#FFFFFF',
   },
   topicGrid: {
