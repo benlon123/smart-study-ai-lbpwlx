@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth, getAllUsers, findUserByEmailOrName, grantPremiumToUser, revokePremiumFromUser } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
@@ -23,7 +23,15 @@ type AdminTab = 'users' | 'premium' | 'notifications' | 'analytics' | 'settings'
 
 export default function AdminScreen() {
   const router = useRouter();
-  const { user, isAdmin } = useAuth();
+  const { 
+    user, 
+    isAdmin, 
+    getAllUsers, 
+    findUserByEmailOrName, 
+    grantPremiumToUser, 
+    revokePremiumFromUser,
+    refreshUsers 
+  } = useAuth();
   const { sendNotification, appSettings, updateAppSettings } = useAdmin();
   const { settings } = useSettings();
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
@@ -31,6 +39,7 @@ export default function AdminScreen() {
   // User management
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   
   // Premium grant
   const [grantSearchTerm, setGrantSearchTerm] = useState('');
@@ -48,6 +57,26 @@ export default function AdminScreen() {
   const [aiLimit, setAiLimit] = useState(appSettings.aiGenerationLimit.toString());
   const [taskCount, setTaskCount] = useState(appSettings.defaultTaskCount.toString());
   const [maintenanceMode, setMaintenanceMode] = useState(appSettings.maintenanceMode);
+
+  // Load users on mount and when tab changes
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  // Refresh users when switching to users or premium tab
+  useEffect(() => {
+    if (activeTab === 'users' || activeTab === 'premium') {
+      loadUsers();
+    }
+  }, [activeTab]);
+
+  const loadUsers = async () => {
+    console.log('Loading users in admin panel...');
+    await refreshUsers();
+    const users = getAllUsers();
+    console.log('Loaded users:', users.length);
+    setAllUsers(users);
+  };
 
   if (!isAdmin) {
     return (
@@ -83,7 +112,7 @@ export default function AdminScreen() {
     }
   };
 
-  const handleGrantPremium = () => {
+  const handleGrantPremium = async () => {
     if (!grantSearchTerm.trim()) {
       Alert.alert('Error', 'Please enter a user email or name');
       return;
@@ -102,7 +131,7 @@ export default function AdminScreen() {
     
     const expiresAt = isPermanent ? undefined : new Date(Date.now() + parseInt(expiryDays) * 24 * 60 * 60 * 1000);
     
-    const success = grantPremiumToUser(
+    const success = await grantPremiumToUser(
       foundUser.id,
       user!.email,
       isPermanent,
@@ -117,12 +146,14 @@ export default function AdminScreen() {
       );
       setGrantSearchTerm('');
       setGrantReason('');
+      // Reload users to reflect changes
+      await loadUsers();
     } else {
       Alert.alert('Error', 'Failed to grant premium access');
     }
   };
 
-  const handleRevokePremium = (userId: string, userName: string) => {
+  const handleRevokePremium = async (userId: string, userName: string) => {
     Alert.alert(
       'Revoke Premium',
       `Are you sure you want to revoke premium access from ${userName}?`,
@@ -131,13 +162,15 @@ export default function AdminScreen() {
         {
           text: 'Revoke',
           style: 'destructive',
-          onPress: () => {
-            const success = revokePremiumFromUser(userId);
+          onPress: async () => {
+            const success = await revokePremiumFromUser(userId);
             if (success) {
               Alert.alert('Success', 'Premium access revoked');
               if (selectedUser?.id === userId) {
                 setSelectedUser(null);
               }
+              // Reload users to reflect changes
+              await loadUsers();
             } else {
               Alert.alert('Error', 'Failed to revoke premium access');
             }
@@ -182,7 +215,6 @@ export default function AdminScreen() {
     Alert.alert('Success', 'App settings updated');
   };
 
-  const allUsers = getAllUsers();
   const premiumUsers = allUsers.filter(u => u.isPremium);
   const freeUsers = allUsers.filter(u => !u.isPremium);
 
@@ -312,36 +344,50 @@ export default function AdminScreen() {
 
       <View style={styles.userListContainer}>
         <Text style={[styles.sectionTitle, { color: textColor }]}>All Users ({allUsers.length})</Text>
-        {allUsers.map((u, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.userListItem, { backgroundColor: cardBg }]}
-            onPress={() => setSelectedUser(u)}
-          >
-            <View style={styles.userListLeft}>
-              <IconSymbol
-                ios_icon_name="person.circle"
-                android_material_icon_name="account-circle"
-                size={32}
-                color={colors.primary}
-              />
-              <View style={styles.userListInfo}>
-                <Text style={[styles.userListName, { color: textColor }]}>{u.name}</Text>
-                <Text style={styles.userListEmail}>{u.email}</Text>
-              </View>
-            </View>
-            {u.isPremium && (
-              <View style={[styles.premiumBadge, { width: 32, height: 32 }]}>
+        {allUsers.length === 0 ? (
+          <View style={[styles.emptyState, { backgroundColor: cardBg }]}>
+            <IconSymbol
+              ios_icon_name="person.2.slash"
+              android_material_icon_name="people-outline"
+              size={48}
+              color={colors.textSecondary}
+            />
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+              No users found. Users will appear here after they sign up.
+            </Text>
+          </View>
+        ) : (
+          allUsers.map((u, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.userListItem, { backgroundColor: cardBg }]}
+              onPress={() => setSelectedUser(u)}
+            >
+              <View style={styles.userListLeft}>
                 <IconSymbol
-                  ios_icon_name="crown.fill"
-                  android_material_icon_name="workspace-premium"
-                  size={16}
-                  color="#FFFFFF"
+                  ios_icon_name="person.circle"
+                  android_material_icon_name="account-circle"
+                  size={32}
+                  color={colors.primary}
                 />
+                <View style={styles.userListInfo}>
+                  <Text style={[styles.userListName, { color: textColor }]}>{u.name}</Text>
+                  <Text style={styles.userListEmail}>{u.email}</Text>
+                </View>
               </View>
-            )}
-          </TouchableOpacity>
-        ))}
+              {u.isPremium && (
+                <View style={[styles.premiumBadge, { width: 32, height: 32 }]}>
+                  <IconSymbol
+                    ios_icon_name="crown.fill"
+                    android_material_icon_name="workspace-premium"
+                    size={16}
+                    color="#FFFFFF"
+                  />
+                </View>
+              )}
+            </TouchableOpacity>
+          ))
+        )}
       </View>
     </View>
   );
@@ -426,25 +472,39 @@ export default function AdminScreen() {
       <View style={[styles.section, { backgroundColor: cardBg }]}>
         <Text style={[styles.sectionTitle, { color: textColor }]}>Premium Users ({premiumUsers.length})</Text>
         
-        {premiumUsers.map((u, index) => (
-          <View key={index} style={[styles.premiumUserCard, { backgroundColor: colors.background }]}>
-            <View style={styles.premiumUserInfo}>
-              <Text style={[styles.premiumUserName, { color: textColor }]}>{u.name}</Text>
-              <Text style={styles.premiumUserEmail}>{u.email}</Text>
-              {u.premiumGrant && (
-                <Text style={styles.premiumUserGrant}>
-                  {u.premiumGrant.isPermanent ? 'Permanent' : `Expires: ${u.premiumGrant.expiresAt ? new Date(u.premiumGrant.expiresAt).toLocaleDateString() : 'N/A'}`}
-                </Text>
-              )}
-            </View>
-            <TouchableOpacity
-              style={[buttonStyles.outline, { borderColor: colors.error }]}
-              onPress={() => handleRevokePremium(u.id, u.name)}
-            >
-              <Text style={[buttonStyles.text, { color: colors.error }]}>Revoke</Text>
-            </TouchableOpacity>
+        {premiumUsers.length === 0 ? (
+          <View style={styles.emptyState}>
+            <IconSymbol
+              ios_icon_name="crown"
+              android_material_icon_name="workspace-premium"
+              size={48}
+              color={colors.textSecondary}
+            />
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+              No premium users yet. Grant premium access to users above.
+            </Text>
           </View>
-        ))}
+        ) : (
+          premiumUsers.map((u, index) => (
+            <View key={index} style={[styles.premiumUserCard, { backgroundColor: colors.background }]}>
+              <View style={styles.premiumUserInfo}>
+                <Text style={[styles.premiumUserName, { color: textColor }]}>{u.name}</Text>
+                <Text style={styles.premiumUserEmail}>{u.email}</Text>
+                {u.premiumGrant && (
+                  <Text style={styles.premiumUserGrant}>
+                    {u.premiumGrant.isPermanent ? 'Permanent' : `Expires: ${u.premiumGrant.expiresAt ? new Date(u.premiumGrant.expiresAt).toLocaleDateString() : 'N/A'}`}
+                  </Text>
+                )}
+              </View>
+              <TouchableOpacity
+                style={[buttonStyles.outline, { borderColor: colors.error }]}
+                onPress={() => handleRevokePremium(u.id, u.name)}
+              >
+                <Text style={[buttonStyles.text, { color: colors.error }]}>Revoke</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        )}
       </View>
 
       <View style={[styles.statsContainer, { backgroundColor: cardBg }]}>
@@ -563,10 +623,10 @@ export default function AdminScreen() {
       <View style={[styles.section, { backgroundColor: cardBg }]}>
         <Text style={[styles.sectionTitle, { color: textColor }]}>User Activity</Text>
         <Text style={[styles.analyticsText, { color: textColor }]}>
-          Average Streak: {Math.round(allUsers.reduce((sum, u) => sum + u.streak, 0) / Math.max(allUsers.length, 1))} days
+          Average Streak: {allUsers.length > 0 ? Math.round(allUsers.reduce((sum, u) => sum + u.streak, 0) / allUsers.length) : 0} days
         </Text>
         <Text style={[styles.analyticsText, { color: textColor }]}>
-          Average Points: {Math.round(allUsers.reduce((sum, u) => sum + u.points, 0) / Math.max(allUsers.length, 1))}
+          Average Points: {allUsers.length > 0 ? Math.round(allUsers.reduce((sum, u) => sum + u.points, 0) / allUsers.length) : 0}
         </Text>
         <Text style={[styles.analyticsText, { color: textColor }]}>
           Total Lessons Created: {allUsers.reduce((sum, u) => sum + (u.lessons?.length || 0), 0)}
@@ -1096,5 +1156,16 @@ const styles = StyleSheet.create({
   },
   notAuthText: {
     textAlign: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    gap: 12,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: colors.textSecondary,
   },
 });

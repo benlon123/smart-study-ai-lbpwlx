@@ -24,6 +24,11 @@ interface AuthContextType {
   updateStreak: () => void;
   enableBiometric: () => Promise<void>;
   disableBiometric: () => Promise<void>;
+  getAllUsers: () => User[];
+  findUserByEmailOrName: (searchTerm: string) => User | undefined;
+  grantPremiumToUser: (userId: string, grantedBy: string, isPermanent: boolean, expiresAt?: Date, reason?: string) => Promise<boolean>;
+  revokePremiumFromUser: (userId: string) => Promise<boolean>;
+  refreshUsers: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,7 +74,7 @@ const loadUsersFromStorage = async (): Promise<User[]> => {
 const saveUsersToStorage = async (users: User[]): Promise<void> => {
   try {
     await AsyncStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-    console.log('Users saved to storage');
+    console.log('Users saved to storage, count:', users.length);
   } catch (error) {
     console.error('Error saving users to storage:', error);
   }
@@ -147,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Load all users from storage
       const users = await loadUsersFromStorage();
+      console.log('Loaded users from storage:', users.length);
       setAllUsers(users);
       
       // Check biometric availability
@@ -249,12 +255,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const refreshUsers = async () => {
+    const users = await loadUsersFromStorage();
+    console.log('Refreshed users from storage:', users.length);
+    setAllUsers(users);
+    
+    // Also refresh current user if logged in
+    if (user) {
+      const updatedCurrentUser = users.find(u => u.id === user.id);
+      if (updatedCurrentUser) {
+        setUser(updatedCurrentUser);
+      }
+    }
+  };
+
   const signUp = async (name: string, email: string, password: string, language: string = 'en') => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Reload users to ensure we have the latest data
+      const latestUsers = await loadUsersFromStorage();
+      
       // Check if email already exists
-      const existingUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      const existingUser = latestUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (existingUser) {
         throw new Error('EMAIL_EXISTS');
       }
@@ -306,7 +329,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signupDate: new Date(),
       };
       
-      const newUsers = [...allUsers, newUser];
+      const newUsers = [...latestUsers, newUser];
       setAllUsers(newUsers);
       await saveUsersToStorage(newUsers);
       
@@ -331,7 +354,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      let existingUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      // Reload users to ensure we have the latest data
+      const latestUsers = await loadUsersFromStorage();
+      setAllUsers(latestUsers);
+      
+      let existingUser = latestUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       
       if (!existingUser) {
         existingUser = {
@@ -380,7 +407,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
           signupDate: new Date(),
         };
-        const newUsers = [...allUsers, existingUser];
+        const newUsers = [...latestUsers, existingUser];
         setAllUsers(newUsers);
         await saveUsersToStorage(newUsers);
       }
@@ -454,13 +481,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ],
       });
 
+      // Reload users to ensure we have the latest data
+      const latestUsers = await loadUsersFromStorage();
+      setAllUsers(latestUsers);
+
       // Create or find user with Apple ID
       const email = credential.email || `${credential.user}@appleid.com`;
       const name = credential.fullName 
         ? `${credential.fullName.givenName || ''} ${credential.fullName.familyName || ''}`.trim()
         : 'Apple User';
 
-      let existingUser = allUsers.find(u => u.email === email);
+      let existingUser = latestUsers.find(u => u.email === email);
       
       if (!existingUser) {
         existingUser = {
@@ -509,7 +540,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
           signupDate: new Date(),
         };
-        const newUsers = [...allUsers, existingUser];
+        const newUsers = [...latestUsers, existingUser];
         setAllUsers(newUsers);
         await saveUsersToStorage(newUsers);
       }
@@ -609,6 +640,99 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const getAllUsersFunc = (): User[] => {
+    console.log('getAllUsers called, returning', allUsers.length, 'users');
+    return allUsers;
+  };
+
+  const findUserByEmailOrNameFunc = (searchTerm: string): User | undefined => {
+    const term = searchTerm.toLowerCase().trim();
+    const foundUser = allUsers.find(u => 
+      u.email.toLowerCase().includes(term) || 
+      u.name.toLowerCase().includes(term)
+    );
+    console.log('findUserByEmailOrName called with:', searchTerm, 'found:', foundUser?.email);
+    return foundUser;
+  };
+
+  const grantPremiumToUserFunc = async (
+    userId: string, 
+    grantedBy: string, 
+    isPermanent: boolean, 
+    expiresAt?: Date,
+    reason?: string
+  ): Promise<boolean> => {
+    try {
+      // Reload users to ensure we have the latest data
+      const latestUsers = await loadUsersFromStorage();
+      const userIndex = latestUsers.findIndex(u => u.id === userId);
+      
+      if (userIndex !== -1) {
+        const grant: PremiumGrant = {
+          id: `grant-${Date.now()}`,
+          userId,
+          grantedBy,
+          grantedAt: new Date(),
+          expiresAt,
+          isPermanent,
+          reason,
+        };
+        
+        latestUsers[userIndex].isPremium = true;
+        latestUsers[userIndex].premiumGrant = grant;
+        
+        await saveUsersToStorage(latestUsers);
+        setAllUsers(latestUsers);
+        
+        // Update current user if it's the same user
+        if (user?.id === userId) {
+          const updatedUser = latestUsers[userIndex];
+          setUser(updatedUser);
+          await saveCurrentUser(updatedUser);
+        }
+        
+        console.log('Premium granted to user:', latestUsers[userIndex].email);
+        return true;
+      }
+      console.log('User not found for premium grant:', userId);
+      return false;
+    } catch (error) {
+      console.error('Error granting premium:', error);
+      return false;
+    }
+  };
+
+  const revokePremiumFromUserFunc = async (userId: string): Promise<boolean> => {
+    try {
+      // Reload users to ensure we have the latest data
+      const latestUsers = await loadUsersFromStorage();
+      const userIndex = latestUsers.findIndex(u => u.id === userId);
+      
+      if (userIndex !== -1) {
+        latestUsers[userIndex].isPremium = false;
+        latestUsers[userIndex].premiumGrant = undefined;
+        
+        await saveUsersToStorage(latestUsers);
+        setAllUsers(latestUsers);
+        
+        // Update current user if it's the same user
+        if (user?.id === userId) {
+          const updatedUser = latestUsers[userIndex];
+          setUser(updatedUser);
+          await saveCurrentUser(updatedUser);
+        }
+        
+        console.log('Premium revoked from user:', latestUsers[userIndex].email);
+        return true;
+      }
+      console.log('User not found for premium revoke:', userId);
+      return false;
+    } catch (error) {
+      console.error('Error revoking premium:', error);
+      return false;
+    }
+  };
+
   const isAdmin = user?.email === 'blonergan55@gmail.com';
 
   return (
@@ -630,65 +754,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateStreak,
         enableBiometric,
         disableBiometric,
+        getAllUsers: getAllUsersFunc,
+        findUserByEmailOrName: findUserByEmailOrNameFunc,
+        grantPremiumToUser: grantPremiumToUserFunc,
+        revokePremiumFromUser: revokePremiumFromUserFunc,
+        refreshUsers,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
-};
-
-// Export function to get all users (for admin)
-export const getAllUsers = (): User[] => {
-  // This will be called from admin context
-  return [];
-};
-
-// Export function to find user by email or name
-export const findUserByEmailOrName = (searchTerm: string): User | undefined => {
-  // This will be implemented in admin context
-  return undefined;
-};
-
-// Export function to grant premium
-export const grantPremiumToUser = async (
-  userId: string, 
-  grantedBy: string, 
-  isPermanent: boolean, 
-  expiresAt?: Date,
-  reason?: string
-): Promise<boolean> => {
-  const users = await loadUsersFromStorage();
-  const userIndex = users.findIndex(u => u.id === userId);
-  if (userIndex !== -1) {
-    const grant: PremiumGrant = {
-      id: `grant-${Date.now()}`,
-      userId,
-      grantedBy,
-      grantedAt: new Date(),
-      expiresAt,
-      isPermanent,
-      reason,
-    };
-    
-    users[userIndex].isPremium = true;
-    users[userIndex].premiumGrant = grant;
-    await saveUsersToStorage(users);
-    console.log('Premium granted to user:', users[userIndex]);
-    return true;
-  }
-  return false;
-};
-
-// Export function to revoke premium
-export const revokePremiumFromUser = async (userId: string): Promise<boolean> => {
-  const users = await loadUsersFromStorage();
-  const userIndex = users.findIndex(u => u.id === userId);
-  if (userIndex !== -1) {
-    users[userIndex].isPremium = false;
-    users[userIndex].premiumGrant = undefined;
-    await saveUsersToStorage(users);
-    console.log('Premium revoked from user:', users[userIndex]);
-    return true;
-  }
-  return false;
 };
