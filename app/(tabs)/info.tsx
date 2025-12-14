@@ -348,7 +348,7 @@ export default function InfoScreen() {
             <View style={styles.subjectCategory}>
               <Text style={styles.subjectCategoryTitle}>BTEC Courses</Text>
               <Text style={styles.subjectCategoryText}>
-                Business, Sport, Health & Social Care, IT, Engineering, Applied Science
+                Business, Sport (with sub-subjects: Anatomy & Physiology, Fitness Testing, Training Methods, Sports Psychology, Sports Nutrition, Sports Injuries, Sports Coaching, Sports Development, Sports Leadership, Sports Performance Analysis), Health & Social Care, IT, Engineering, Applied Science
               </Text>
             </View>
           </View>
@@ -413,25 +413,10 @@ export default function InfoScreen() {
           </View>
         </View>
 
-        {/* Support */}
+        {/* App Version */}
         <View style={[styles.section, styles.lastSection]}>
-          <Text style={styles.sectionTitle}>Need Help?</Text>
-          <Text style={styles.sectionDescription}>
-            If you have any questions or need assistance, please reach out to our support team.
-          </Text>
-          
-          <View style={styles.supportCard}>
-            <IconSymbol
-              ios_icon_name="envelope.fill"
-              android_material_icon_name="email"
-              size={24}
-              color={colors.primary}
-            />
-            <View style={styles.supportContent}>
-              <Text style={styles.supportTitle}>Contact Support</Text>
-              <Text style={styles.supportText}>support@smartstudyai.com</Text>
-            </View>
-          </View>
+          <Text style={styles.versionText}>SmartStudy AI v1.0.0</Text>
+          <Text style={styles.versionSubtext}>Made with ❤️ for students</Text>
         </View>
       </ScrollView>
     </View>
@@ -474,6 +459,7 @@ const styles = StyleSheet.create({
   },
   lastSection: {
     paddingBottom: 32,
+    alignItems: 'center',
   },
   appIconContainer: {
     width: 96,
@@ -723,28 +709,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: colors.textSecondary,
   },
-  supportCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    padding: 20,
-    borderRadius: 16,
-    gap: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  supportContent: {
-    flex: 1,
-  },
-  supportTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
+  versionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
     marginBottom: 4,
   },
-  supportText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
+  versionSubtext: {
+    fontSize: 12,
+    color: colors.textSecondary,
   },
 });

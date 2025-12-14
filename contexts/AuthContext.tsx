@@ -14,7 +14,7 @@ interface AuthContextType {
   isAdmin: boolean;
   biometricAvailable: boolean;
   biometricEnabled: boolean;
-  signUp: (name: string, email: string, password: string) => Promise<void>;
+  signUp: (name: string, email: string, password: string, language: string) => Promise<void>;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   signInWithBiometric: () => Promise<void>;
   signInWithApple: () => Promise<void>;
@@ -249,7 +249,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (name: string, email: string, password: string) => {
+  const signUp = async (name: string, email: string, password: string, language: string = 'en') => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -263,6 +263,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: `user-${Date.now()}`,
         name,
         email,
+        language,
         isPremium: false,
         lessons: [],
         tasks: [],
@@ -337,6 +338,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: `user-${Date.now()}`,
           name: email === 'blonergan55@gmail.com' ? 'Admin User' : 'Test User',
           email,
+          language: 'en',
           isPremium: false,
           lessons: [],
           tasks: [],
@@ -465,6 +467,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: `user-${Date.now()}`,
           name,
           email,
+          language: 'en',
           isPremium: false,
           lessons: [],
           tasks: [],
@@ -521,6 +524,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       if (error.code === 'ERR_REQUEST_CANCELED') {
         console.log('Apple Sign-In was canceled');
+        throw new Error('Apple Sign-In was canceled');
       } else {
         console.error('Apple Sign-In error:', error);
         throw new Error('Failed to sign in with Apple. Please try again.');
@@ -634,17 +638,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 // Export function to get all users (for admin)
-export const getAllUsers = async (): Promise<User[]> => {
-  return await loadUsersFromStorage();
+export const getAllUsers = (): User[] => {
+  // This will be called from admin context
+  return [];
 };
 
 // Export function to find user by email or name
-export const findUserByEmailOrName = async (searchTerm: string): Promise<User | undefined> => {
-  const users = await loadUsersFromStorage();
-  return users.find(u => 
-    u.email.toLowerCase() === searchTerm.toLowerCase() || 
-    u.name.toLowerCase() === searchTerm.toLowerCase()
-  );
+export const findUserByEmailOrName = (searchTerm: string): User | undefined => {
+  // This will be implemented in admin context
+  return undefined;
 };
 
 // Export function to grant premium

@@ -11,11 +11,25 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+
+const AVAILABLE_LANGUAGES = [
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+  { code: 'pt', name: 'Português', flag: '🇵🇹' },
+  { code: 'zh', name: '中文', flag: '🇨🇳' },
+  { code: 'ja', name: '日本語', flag: '🇯🇵' },
+  { code: 'ko', name: '한국어', flag: '🇰🇷' },
+  { code: 'ar', name: 'العربية', flag: '🇸🇦' },
+];
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -24,6 +38,8 @@ export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -45,7 +61,7 @@ export default function SignUpScreen() {
 
     setIsLoading(true);
     try {
-      await signUp(name, email, password);
+      await signUp(name, email, password, selectedLanguage);
       console.log('Sign up successful, navigating to home...');
       
       // Navigate to home immediately after successful sign up
@@ -84,6 +100,8 @@ export default function SignUpScreen() {
       setIsLoading(false);
     }
   };
+
+  const selectedLang = AVAILABLE_LANGUAGES.find(l => l.code === selectedLanguage) || AVAILABLE_LANGUAGES[0];
 
   return (
     <KeyboardAvoidingView
@@ -183,6 +201,23 @@ export default function SignUpScreen() {
               />
             </View>
 
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Language</Text>
+              <TouchableOpacity
+                style={styles.languageSelector}
+                onPress={() => setShowLanguageModal(true)}
+              >
+                <Text style={styles.languageFlag}>{selectedLang.flag}</Text>
+                <Text style={styles.languageText}>{selectedLang.name}</Text>
+                <IconSymbol
+                  ios_icon_name="chevron.down"
+                  android_material_icon_name="expand-more"
+                  size={20}
+                  color={colors.text}
+                />
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.reminderBox}>
               <IconSymbol
                 ios_icon_name="exclamationmark.triangle"
@@ -218,6 +253,57 @@ export default function SignUpScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Language Selection Modal */}
+      <Modal
+        visible={showLanguageModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLanguageModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Language</Text>
+              <TouchableOpacity onPress={() => setShowLanguageModal(false)}>
+                <IconSymbol
+                  ios_icon_name="xmark"
+                  android_material_icon_name="close"
+                  size={24}
+                  color={colors.text}
+                />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.languageList}>
+              {AVAILABLE_LANGUAGES.map((lang, index) => (
+                <React.Fragment key={index}>
+                  <TouchableOpacity
+                    style={[
+                      styles.languageItem,
+                      selectedLanguage === lang.code && styles.languageItemSelected,
+                    ]}
+                    onPress={() => {
+                      setSelectedLanguage(lang.code);
+                      setShowLanguageModal(false);
+                    }}
+                  >
+                    <Text style={styles.languageItemFlag}>{lang.flag}</Text>
+                    <Text style={styles.languageItemText}>{lang.name}</Text>
+                    {selectedLanguage === lang.code && (
+                      <IconSymbol
+                        ios_icon_name="checkmark"
+                        android_material_icon_name="check"
+                        size={20}
+                        color={colors.primary}
+                      />
+                    )}
+                  </TouchableOpacity>
+                </React.Fragment>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -271,6 +357,26 @@ const styles = StyleSheet.create({
     right: 16,
     top: 14,
   },
+  languageSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  languageFlag: {
+    fontSize: 24,
+  },
+  languageText: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '500',
+  },
   reminderBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -298,5 +404,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.primary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  languageList: {
+    maxHeight: 400,
+  },
+  languageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 12,
+  },
+  languageItemSelected: {
+    backgroundColor: colors.primary + '10',
+  },
+  languageItemFlag: {
+    fontSize: 28,
+  },
+  languageItemText: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
   },
 });

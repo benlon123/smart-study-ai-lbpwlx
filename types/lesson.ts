@@ -114,6 +114,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  language: string; // User's preferred language
   avatar?: string;
   isPremium: boolean;
   premiumGrant?: PremiumGrant;
@@ -190,5 +191,8 @@ export interface Badge {
   name: string;
   description: string;
   icon: string;
+  category: 'study' | 'streak' | 'achievement' | 'special';
+  requirement: string;
   unlockedAt?: Date;
+  earned: boolean;
 }
