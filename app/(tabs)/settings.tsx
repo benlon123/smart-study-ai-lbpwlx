@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,17 +9,87 @@ import {
   Alert,
   Platform,
   Switch,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { Subject } from '@/types/lesson';
+
+const AVAILABLE_SUBJECTS: Subject[] = [
+  'Mathematics',
+  'English Language',
+  'English Literature',
+  'Science',
+  'Physics',
+  'Chemistry',
+  'Biology',
+  'History',
+  'Geography',
+  'Computer Science',
+  'Business Studies',
+  'Economics',
+  'Psychology',
+  'Sociology',
+  'Art & Design',
+  'Music',
+  'Drama',
+  'Physical Education',
+  'Religious Studies',
+  'French',
+  'Spanish',
+  'German',
+  'Media Studies',
+  'Design & Technology',
+  'Food Technology',
+  'BTEC Business',
+  'BTEC Sport',
+  'BTEC Health & Social Care',
+  'BTEC IT',
+  'BTEC Engineering',
+  'BTEC Applied Science',
+];
+
+const AVATAR_OPTIONS = ['👤', '😊', '🎓', '📚', '🌟', '🚀', '🎯', '💡', '🏆', '🎨', '🎵', '⚽'];
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, isAdmin, signOut } = useAuth();
-  const { settings, toggleDyslexiaFont, toggleDarkMode, toggleHighContrast, toggleNotifications } = useSettings();
+  const { user, isAuthenticated, isAdmin, signOut, updateUser } = useAuth();
+  const {
+    settings,
+    toggleDyslexiaFont,
+    toggleDarkMode,
+    toggleHighContrast,
+    toggleNotifications,
+    setTextSize,
+    setDefaultDifficulty,
+    setDefaultSubjects,
+    toggleStudySounds,
+    setCustomColors,
+    getTextSizeMultiplier,
+  } = useSettings();
+
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showSecurity, setShowSecurity] = useState(false);
+  const [showAvatar, setShowAvatar] = useState(false);
+  const [showBadges, setShowBadges] = useState(false);
+  const [showTextSize, setShowTextSize] = useState(false);
+  const [showDifficulty, setShowDifficulty] = useState(false);
+  const [showSubjects, setShowSubjects] = useState(false);
+  const [showCustomColors, setShowCustomColors] = useState(false);
+
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editEmail, setEditEmail] = useState(user?.email || '');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>(settings.study.defaultSubjects);
+  const [customPrimary, setCustomPrimary] = useState('#7451EB');
+  const [customSecondary, setCustomSecondary] = useState('#A892FF');
+  const [customAccent, setCustomAccent] = useState('#FF6F61');
 
   const handleSignOut = () => {
     Alert.alert(
@@ -47,6 +117,64 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleSaveProfile = () => {
+    if (!editName.trim()) {
+      Alert.alert('Error', 'Name cannot be empty');
+      return;
+    }
+    updateUser({ name: editName, email: editEmail });
+    setShowEditProfile(false);
+    Alert.alert('Success', 'Profile updated successfully!');
+  };
+
+  const handleChangePassword = () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'New passwords do not match');
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowSecurity(false);
+    Alert.alert('Success', 'Password changed successfully!');
+  };
+
+  const handleSelectAvatar = (avatar: string) => {
+    updateUser({ avatar });
+    setShowAvatar(false);
+    Alert.alert('Success', 'Avatar updated!');
+  };
+
+  const handleSaveSubjects = () => {
+    setDefaultSubjects(selectedSubjects);
+    setShowSubjects(false);
+    Alert.alert('Success', 'Default subjects updated!');
+  };
+
+  const handleSaveCustomColors = () => {
+    setCustomColors({
+      primary: customPrimary,
+      secondary: customSecondary,
+      accent: customAccent,
+    });
+    setShowCustomColors(false);
+    Alert.alert('Success', 'Custom colors applied!');
+  };
+
+  const handleResetColors = () => {
+    setCustomColors(null);
+    setShowCustomColors(false);
+    Alert.alert('Success', 'Colors reset to default!');
+  };
+
   if (!isAuthenticated) {
     return (
       <View style={[commonStyles.container, commonStyles.centerContent]}>
@@ -72,6 +200,7 @@ export default function SettingsScreen() {
 
   const textColor = settings.theme.mode === 'dark' ? '#FFFFFF' : colors.text;
   const cardBg = settings.theme.mode === 'dark' ? '#1a1a1a' : colors.card;
+  const textMultiplier = getTextSizeMultiplier();
 
   return (
     <View style={containerStyle}>
@@ -84,14 +213,14 @@ export default function SettingsScreen() {
           <Text style={[
             styles.headerTitle,
             settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-            { color: textColor }
+            { color: textColor, fontSize: 28 * textMultiplier }
           ]}>
             Settings
           </Text>
           <Text style={[
             commonStyles.textSecondary,
             settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-            { color: textColor }
+            { color: textColor, fontSize: 14 * textMultiplier }
           ]}>
             Customize your learning experience
           </Text>
@@ -112,13 +241,14 @@ export default function SettingsScreen() {
               <Text style={[
                 styles.adminBannerTitle,
                 settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                { color: textColor }
+                { color: textColor, fontSize: 16 * textMultiplier }
               ]}>
                 Admin Panel
               </Text>
               <Text style={[
                 styles.adminBannerSubtitle,
-                settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { fontSize: 13 * textMultiplier }
               ]}>
                 Manage users, premium features & app settings
               </Text>
@@ -147,13 +277,14 @@ export default function SettingsScreen() {
               <Text style={[
                 styles.premiumBannerTitle,
                 settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                { color: textColor }
+                { color: textColor, fontSize: 16 * textMultiplier }
               ]}>
                 Upgrade to Premium
               </Text>
               <Text style={[
                 styles.premiumBannerSubtitle,
-                settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { fontSize: 13 * textMultiplier }
               ]}>
                 Unlock all features & unlimited lessons
               </Text>
@@ -171,7 +302,7 @@ export default function SettingsScreen() {
           <Text style={[
             styles.sectionTitle,
             settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-            { color: textColor }
+            { color: textColor, fontSize: 18 * textMultiplier }
           ]}>
             Accessibility
           </Text>
@@ -188,13 +319,14 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Dyslexia-Friendly Font
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
                   Easier to read font style
                 </Text>
@@ -210,7 +342,7 @@ export default function SettingsScreen() {
 
           <TouchableOpacity
             style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Text Size', 'Text size adjustment coming soon!')}
+            onPress={() => setShowTextSize(true)}
           >
             <View style={styles.settingLeft}>
               <IconSymbol
@@ -223,13 +355,14 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Text Size
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
                   {settings.accessibility.textSize}
                 </Text>
@@ -255,13 +388,14 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   High Contrast
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
                   Improve visibility
                 </Text>
@@ -274,48 +408,13 @@ export default function SettingsScreen() {
               thumbColor="#FFFFFF"
             />
           </View>
-
-          <TouchableOpacity
-            style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Voice Commands', 'Voice commands coming soon!')}
-          >
-            <View style={styles.settingLeft}>
-              <IconSymbol
-                ios_icon_name="mic"
-                android_material_icon_name="mic"
-                size={20}
-                color={colors.primary}
-              />
-              <View style={styles.settingText}>
-                <Text style={[
-                  styles.settingTitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
-                ]}>
-                  Voice Commands
-                </Text>
-                <Text style={[
-                  styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
-                ]}>
-                  Control with your voice
-                </Text>
-              </View>
-            </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
           <Text style={[
             styles.sectionTitle,
             settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-            { color: textColor }
+            { color: textColor, fontSize: 18 * textMultiplier }
           ]}>
             Theme
           </Text>
@@ -332,13 +431,14 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Dark Mode
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
                   Reduce eye strain
                 </Text>
@@ -354,7 +454,7 @@ export default function SettingsScreen() {
 
           <TouchableOpacity
             style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Custom Colors', 'Color customization coming soon!')}
+            onPress={() => setShowCustomColors(true)}
           >
             <View style={styles.settingLeft}>
               <IconSymbol
@@ -367,15 +467,16 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Custom Colors
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
-                  Personalize your theme
+                  {settings.theme.customColors ? 'Custom theme active' : 'Personalize your theme'}
                 </Text>
               </View>
             </View>
@@ -387,10 +488,7 @@ export default function SettingsScreen() {
             />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Study Sounds', 'Study sounds coming soon!')}
-          >
+          <View style={[styles.settingItem, { backgroundColor: cardBg }]}>
             <View style={styles.settingLeft}>
               <IconSymbol
                 ios_icon_name="speaker.wave.2"
@@ -402,32 +500,33 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Study Sounds
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
                   Background music & ambience
                 </Text>
               </View>
             </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color={colors.textSecondary}
+            <Switch
+              value={settings.theme.studySounds}
+              onValueChange={toggleStudySounds}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#FFFFFF"
             />
-          </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.section}>
           <Text style={[
             styles.sectionTitle,
             settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-            { color: textColor }
+            { color: textColor, fontSize: 18 * textMultiplier }
           ]}>
             Notifications
           </Text>
@@ -444,13 +543,14 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Task Alerts
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
                   Remind me about tasks
                 </Text>
@@ -476,13 +576,14 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Exam Reminders
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
                   Never miss an exam
                 </Text>
@@ -508,13 +609,14 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   AI Study Reminders
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
                   Smart study suggestions
                 </Text>
@@ -533,14 +635,14 @@ export default function SettingsScreen() {
           <Text style={[
             styles.sectionTitle,
             settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-            { color: textColor }
+            { color: textColor, fontSize: 18 * textMultiplier }
           ]}>
             Study Preferences
           </Text>
           
           <TouchableOpacity
             style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Default Difficulty', 'Difficulty settings coming soon!')}
+            onPress={() => setShowDifficulty(true)}
           >
             <View style={styles.settingLeft}>
               <IconSymbol
@@ -553,13 +655,14 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Default Difficulty
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
                   {settings.study.defaultDifficulty}
                 </Text>
@@ -575,42 +678,7 @@ export default function SettingsScreen() {
 
           <TouchableOpacity
             style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Session Length', 'Session settings coming soon!')}
-          >
-            <View style={styles.settingLeft}>
-              <IconSymbol
-                ios_icon_name="clock"
-                android_material_icon_name="schedule"
-                size={20}
-                color={colors.primary}
-              />
-              <View style={styles.settingText}>
-                <Text style={[
-                  styles.settingTitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
-                ]}>
-                  Session Length
-                </Text>
-                <Text style={[
-                  styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
-                ]}>
-                  {settings.study.sessionLength} minutes (Pomodoro)
-                </Text>
-              </View>
-            </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Default Subjects', 'Subject preferences coming soon!')}
+            onPress={() => setShowSubjects(true)}
           >
             <View style={styles.settingLeft}>
               <IconSymbol
@@ -623,15 +691,18 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Default Subjects
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
-                  Choose your main subjects
+                  {settings.study.defaultSubjects.length > 0 
+                    ? `${settings.study.defaultSubjects.length} selected` 
+                    : 'Choose your main subjects'}
                 </Text>
               </View>
             </View>
@@ -648,14 +719,14 @@ export default function SettingsScreen() {
           <Text style={[
             styles.sectionTitle,
             settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-            { color: textColor }
+            { color: textColor, fontSize: 18 * textMultiplier }
           ]}>
             Gamification
           </Text>
           
           <TouchableOpacity
             style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Badges', 'Badge settings coming soon!')}
+            onPress={() => setShowBadges(true)}
           >
             <View style={styles.settingLeft}>
               <IconSymbol
@@ -668,15 +739,16 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Badges & Achievements
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
-                  Show my progress
+                  {user?.badges.length || 0} badges earned
                 </Text>
               </View>
             </View>
@@ -690,7 +762,7 @@ export default function SettingsScreen() {
 
           <TouchableOpacity
             style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Avatar', 'Avatar customization coming soon!')}
+            onPress={() => setShowAvatar(true)}
           >
             <View style={styles.settingLeft}>
               <IconSymbol
@@ -703,15 +775,16 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Avatar
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
-                  Customize your profile
+                  {user?.avatar || 'Customize your profile'}
                 </Text>
               </View>
             </View>
@@ -728,14 +801,18 @@ export default function SettingsScreen() {
           <Text style={[
             styles.sectionTitle,
             settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-            { color: textColor }
+            { color: textColor, fontSize: 18 * textMultiplier }
           ]}>
             Account
           </Text>
           
           <TouchableOpacity
             style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Edit Profile', 'Profile editing coming soon!')}
+            onPress={() => {
+              setEditName(user?.name || '');
+              setEditEmail(user?.email || '');
+              setShowEditProfile(true);
+            }}
           >
             <View style={styles.settingLeft}>
               <IconSymbol
@@ -748,13 +825,14 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Edit Profile
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
                   Update your information
                 </Text>
@@ -770,7 +848,7 @@ export default function SettingsScreen() {
 
           <TouchableOpacity
             style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Security', 'Security settings coming soon!')}
+            onPress={() => setShowSecurity(true)}
           >
             <View style={styles.settingLeft}>
               <IconSymbol
@@ -783,50 +861,16 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
+                  { color: textColor, fontSize: 15 * textMultiplier }
                 ]}>
                   Security
                 </Text>
                 <Text style={[
                   styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
                 ]}>
                   Password & 2FA
-                </Text>
-              </View>
-            </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.settingItem, { backgroundColor: cardBg }]}
-            onPress={() => Alert.alert('Backup & Restore', 'Backup settings coming soon!')}
-          >
-            <View style={styles.settingLeft}>
-              <IconSymbol
-                ios_icon_name="icloud"
-                android_material_icon_name="cloud"
-                size={20}
-                color={colors.primary}
-              />
-              <View style={styles.settingText}>
-                <Text style={[
-                  styles.settingTitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor }
-                ]}>
-                  Backup & Restore
-                </Text>
-                <Text style={[
-                  styles.settingSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
-                ]}>
-                  Cloud sync
                 </Text>
               </View>
             </View>
@@ -853,7 +897,8 @@ export default function SettingsScreen() {
                 <Text style={[
                   styles.settingTitle,
                   styles.signOutText,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 15 * textMultiplier }
                 ]}>
                   Sign Out
                 </Text>
@@ -871,18 +916,348 @@ export default function SettingsScreen() {
         <View style={styles.footer}>
           <Text style={[
             styles.footerText,
-            settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { fontSize: 12 * textMultiplier }
           ]}>
             SmartStudy AI v1.0.0
           </Text>
           <Text style={[
             styles.footerText,
-            settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { fontSize: 12 * textMultiplier }
           ]}>
             Made with ❤️ for students
           </Text>
         </View>
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <Modal visible={showEditProfile} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <Text style={[styles.modalTitle, { color: textColor }]}>Edit Profile</Text>
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor: colors.border }]}
+              placeholder="Name"
+              placeholderTextColor={colors.textSecondary}
+              value={editName}
+              onChangeText={setEditName}
+            />
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor: colors.border }]}
+              placeholder="Email"
+              placeholderTextColor={colors.textSecondary}
+              value={editEmail}
+              onChangeText={setEditEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowEditProfile(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={handleSaveProfile}
+              >
+                <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Security Modal */}
+      <Modal visible={showSecurity} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <Text style={[styles.modalTitle, { color: textColor }]}>Change Password</Text>
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor: colors.border }]}
+              placeholder="Current Password"
+              placeholderTextColor={colors.textSecondary}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              secureTextEntry
+            />
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor: colors.border }]}
+              placeholder="New Password"
+              placeholderTextColor={colors.textSecondary}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+            />
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor: colors.border }]}
+              placeholder="Confirm New Password"
+              placeholderTextColor={colors.textSecondary}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowSecurity(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={handleChangePassword}
+              >
+                <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Change</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Avatar Modal */}
+      <Modal visible={showAvatar} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <Text style={[styles.modalTitle, { color: textColor }]}>Choose Avatar</Text>
+            <View style={styles.avatarGrid}>
+              {AVATAR_OPTIONS.map((avatar, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.avatarOption,
+                    user?.avatar === avatar && styles.avatarOptionSelected,
+                  ]}
+                  onPress={() => handleSelectAvatar(avatar)}
+                >
+                  <Text style={styles.avatarEmoji}>{avatar}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalButtonCancel, { width: '100%' }]}
+              onPress={() => setShowAvatar(false)}
+            >
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Badges Modal */}
+      <Modal visible={showBadges} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <Text style={[styles.modalTitle, { color: textColor }]}>Your Badges</Text>
+            <ScrollView style={styles.badgesList}>
+              {user?.badges && user.badges.length > 0 ? (
+                user.badges.map((badge, index) => (
+                  <View key={index} style={[styles.badgeItem, { backgroundColor: colors.secondary + '20' }]}>
+                    <IconSymbol
+                      ios_icon_name="rosette"
+                      android_material_icon_name="emoji-events"
+                      size={24}
+                      color={colors.highlight}
+                    />
+                    <Text style={[styles.badgeText, { color: textColor }]}>{badge}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  No badges earned yet. Keep studying to unlock achievements!
+                </Text>
+              )}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalButtonCancel, { width: '100%' }]}
+              onPress={() => setShowBadges(false)}
+            >
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Text Size Modal */}
+      <Modal visible={showTextSize} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <Text style={[styles.modalTitle, { color: textColor }]}>Text Size</Text>
+            {(['small', 'medium', 'large', 'extra-large'] as const).map((size) => (
+              <TouchableOpacity
+                key={size}
+                style={[
+                  styles.optionItem,
+                  settings.accessibility.textSize === size && styles.optionItemSelected,
+                ]}
+                onPress={() => {
+                  setTextSize(size);
+                  setShowTextSize(false);
+                }}
+              >
+                <Text style={[styles.optionText, { color: textColor }]}>
+                  {size.charAt(0).toUpperCase() + size.slice(1).replace('-', ' ')}
+                </Text>
+                {settings.accessibility.textSize === size && (
+                  <IconSymbol
+                    ios_icon_name="checkmark"
+                    android_material_icon_name="check"
+                    size={20}
+                    color={colors.primary}
+                  />
+                )}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalButtonCancel, { width: '100%', marginTop: 16 }]}
+              onPress={() => setShowTextSize(false)}
+            >
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Difficulty Modal */}
+      <Modal visible={showDifficulty} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <Text style={[styles.modalTitle, { color: textColor }]}>Default Difficulty</Text>
+            {(['Easy', 'Normal', 'Hard'] as const).map((difficulty) => (
+              <TouchableOpacity
+                key={difficulty}
+                style={[
+                  styles.optionItem,
+                  settings.study.defaultDifficulty === difficulty && styles.optionItemSelected,
+                ]}
+                onPress={() => {
+                  setDefaultDifficulty(difficulty);
+                  setShowDifficulty(false);
+                }}
+              >
+                <Text style={[styles.optionText, { color: textColor }]}>{difficulty}</Text>
+                {settings.study.defaultDifficulty === difficulty && (
+                  <IconSymbol
+                    ios_icon_name="checkmark"
+                    android_material_icon_name="check"
+                    size={20}
+                    color={colors.primary}
+                  />
+                )}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalButtonCancel, { width: '100%', marginTop: 16 }]}
+              onPress={() => setShowDifficulty(false)}
+            >
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Subjects Modal */}
+      <Modal visible={showSubjects} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg, maxHeight: '80%' }]}>
+            <Text style={[styles.modalTitle, { color: textColor }]}>Default Subjects</Text>
+            <ScrollView style={styles.subjectsList}>
+              {AVAILABLE_SUBJECTS.map((subject) => (
+                <TouchableOpacity
+                  key={subject}
+                  style={[
+                    styles.optionItem,
+                    selectedSubjects.includes(subject) && styles.optionItemSelected,
+                  ]}
+                  onPress={() => {
+                    if (selectedSubjects.includes(subject)) {
+                      setSelectedSubjects(selectedSubjects.filter(s => s !== subject));
+                    } else {
+                      setSelectedSubjects([...selectedSubjects, subject]);
+                    }
+                  }}
+                >
+                  <Text style={[styles.optionText, { color: textColor }]}>{subject}</Text>
+                  {selectedSubjects.includes(subject) && (
+                    <IconSymbol
+                      ios_icon_name="checkmark"
+                      android_material_icon_name="check"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => {
+                  setSelectedSubjects(settings.study.defaultSubjects);
+                  setShowSubjects(false);
+                }}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={handleSaveSubjects}
+              >
+                <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Custom Colors Modal */}
+      <Modal visible={showCustomColors} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: cardBg }]}>
+            <Text style={[styles.modalTitle, { color: textColor }]}>Custom Colors</Text>
+            <Text style={[styles.colorLabel, { color: textColor }]}>Primary Color</Text>
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor: colors.border }]}
+              placeholder="#7451EB"
+              placeholderTextColor={colors.textSecondary}
+              value={customPrimary}
+              onChangeText={setCustomPrimary}
+            />
+            <Text style={[styles.colorLabel, { color: textColor }]}>Secondary Color</Text>
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor: colors.border }]}
+              placeholder="#A892FF"
+              placeholderTextColor={colors.textSecondary}
+              value={customSecondary}
+              onChangeText={setCustomSecondary}
+            />
+            <Text style={[styles.colorLabel, { color: textColor }]}>Accent Color</Text>
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor: colors.border }]}
+              placeholder="#FF6F61"
+              placeholderTextColor={colors.textSecondary}
+              value={customAccent}
+              onChangeText={setCustomAccent}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={handleResetColors}
+              >
+                <Text style={styles.modalButtonText}>Reset</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={handleSaveCustomColors}
+              >
+                <Text style={[styles.modalButtonText, { color: '#FFFFFF' }]}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1027,5 +1402,136 @@ const styles = StyleSheet.create({
   },
   dyslexiaFont: {
     fontFamily: 'OpenDyslexic',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.2)',
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  input: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: colors.text,
+    marginBottom: 12,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: colors.border,
+  },
+  modalButtonSave: {
+    backgroundColor: colors.primary,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  avatarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  avatarOption: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  avatarOptionSelected: {
+    borderColor: colors.primary,
+    borderWidth: 3,
+  },
+  avatarEmoji: {
+    fontSize: 32,
+  },
+  badgesList: {
+    maxHeight: 300,
+    marginBottom: 20,
+  },
+  badgeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    gap: 12,
+  },
+  badgeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    padding: 20,
+  },
+  optionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: colors.background,
+  },
+  optionItemSelected: {
+    backgroundColor: colors.primary + '20',
+  },
+  optionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text,
+  },
+  subjectsList: {
+    maxHeight: 400,
+    marginBottom: 16,
+  },
+  colorLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+    marginTop: 8,
   },
 });

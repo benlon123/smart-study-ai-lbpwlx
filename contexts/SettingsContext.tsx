@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 export interface AppSettings {
   accessibility: {
@@ -7,11 +8,14 @@ export interface AppSettings {
     textSize: 'small' | 'medium' | 'large' | 'extra-large';
     highContrast: boolean;
     screenReader: boolean;
-    voiceCommands: boolean;
   };
   theme: {
     mode: 'light' | 'dark' | 'auto';
-    customColors: boolean;
+    customColors: {
+      primary: string;
+      secondary: string;
+      accent: string;
+    } | null;
     eyeStrainReduction: boolean;
     studySounds: boolean;
   };
@@ -41,6 +45,12 @@ interface SettingsContextType {
   toggleDarkMode: () => void;
   toggleHighContrast: () => void;
   toggleNotifications: (key: keyof AppSettings['notifications']) => void;
+  setTextSize: (size: 'small' | 'medium' | 'large' | 'extra-large') => void;
+  setDefaultDifficulty: (difficulty: 'Easy' | 'Normal' | 'Hard') => void;
+  setDefaultSubjects: (subjects: string[]) => void;
+  toggleStudySounds: () => void;
+  setCustomColors: (colors: { primary: string; secondary: string; accent: string } | null) => void;
+  getTextSizeMultiplier: () => number;
 }
 
 const defaultSettings: AppSettings = {
@@ -49,11 +59,10 @@ const defaultSettings: AppSettings = {
     textSize: 'medium',
     highContrast: false,
     screenReader: false,
-    voiceCommands: false,
   },
   theme: {
     mode: 'light',
-    customColors: false,
+    customColors: null,
     eyeStrainReduction: false,
     studySounds: false,
   },
@@ -87,30 +96,40 @@ export const useSettings = () => {
 };
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, updateUser } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
 
+  // Sync settings with user data when user changes
   useEffect(() => {
-    // Load settings from storage
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      // In a real app, load from AsyncStorage or SecureStore
-      console.log('Settings loaded');
-    } catch (error) {
-      console.error('Error loading settings:', error);
+    if (user?.settings) {
+      setSettings({
+        accessibility: {
+          dyslexiaFont: user.settings.accessibility.dyslexiaFont,
+          textSize: user.settings.accessibility.textSize,
+          highContrast: user.settings.accessibility.highContrast,
+          screenReader: user.settings.accessibility.screenReader,
+        },
+        theme: {
+          mode: user.settings.theme.mode,
+          customColors: user.settings.theme.customColors ? {
+            primary: '#7451EB',
+            secondary: '#A892FF',
+            accent: '#FF6F61',
+          } : null,
+          eyeStrainReduction: user.settings.theme.eyeStrainReduction,
+          studySounds: user.settings.theme.studySounds,
+        },
+        notifications: user.settings.notifications,
+        study: {
+          defaultDifficulty: user.settings.study.defaultDifficulty,
+          defaultSubjects: user.settings.study.defaultSubjects,
+          sessionLength: user.settings.study.sessionLength,
+          pomodoroEnabled: user.settings.study.pomodoroEnabled,
+        },
+        gamification: user.settings.gamification,
+      });
     }
-  };
-
-  const saveSettings = async (newSettings: AppSettings) => {
-    try {
-      // In a real app, save to AsyncStorage or SecureStore
-      console.log('Settings saved:', newSettings);
-    } catch (error) {
-      console.error('Error saving settings:', error);
-    }
-  };
+  }, [user]);
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {
     setSettings(prev => {
@@ -123,69 +142,125 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         study: { ...prev.study, ...(newSettings.study || {}) },
         gamification: { ...prev.gamification, ...(newSettings.gamification || {}) },
       };
-      saveSettings(updated);
+
+      // Update user settings in AuthContext
+      if (user) {
+        updateUser({
+          settings: {
+            accessibility: {
+              ...updated.accessibility,
+              voiceCommands: false, // Voice commands removed
+            },
+            theme: {
+              ...updated.theme,
+              customColors: !!updated.theme.customColors,
+            },
+            notifications: updated.notifications,
+            study: updated.study,
+            gamification: updated.gamification,
+          },
+        });
+      }
+
+      console.log('Settings updated:', updated);
       return updated;
     });
   };
 
   const toggleDyslexiaFont = () => {
-    setSettings(prev => {
-      const updated = {
-        ...prev,
-        accessibility: {
-          ...prev.accessibility,
-          dyslexiaFont: !prev.accessibility.dyslexiaFont,
-        },
-      };
-      saveSettings(updated);
-      console.log('Dyslexia font toggled:', updated.accessibility.dyslexiaFont);
-      return updated;
+    updateSettings({
+      accessibility: {
+        ...settings.accessibility,
+        dyslexiaFont: !settings.accessibility.dyslexiaFont,
+      },
     });
   };
 
   const toggleDarkMode = () => {
-    setSettings(prev => {
-      const updated = {
-        ...prev,
-        theme: {
-          ...prev.theme,
-          mode: prev.theme.mode === 'dark' ? 'light' : 'dark',
-        },
-      };
-      saveSettings(updated);
-      console.log('Dark mode toggled:', updated.theme.mode);
-      return updated;
+    updateSettings({
+      theme: {
+        ...settings.theme,
+        mode: settings.theme.mode === 'dark' ? 'light' : 'dark',
+      },
     });
   };
 
   const toggleHighContrast = () => {
-    setSettings(prev => {
-      const updated = {
-        ...prev,
-        accessibility: {
-          ...prev.accessibility,
-          highContrast: !prev.accessibility.highContrast,
-        },
-      };
-      saveSettings(updated);
-      console.log('High contrast toggled:', updated.accessibility.highContrast);
-      return updated;
+    updateSettings({
+      accessibility: {
+        ...settings.accessibility,
+        highContrast: !settings.accessibility.highContrast,
+      },
     });
   };
 
   const toggleNotifications = (key: keyof AppSettings['notifications']) => {
-    setSettings(prev => {
-      const updated = {
-        ...prev,
-        notifications: {
-          ...prev.notifications,
-          [key]: !prev.notifications[key],
-        },
-      };
-      saveSettings(updated);
-      console.log(`Notification ${key} toggled:`, updated.notifications[key]);
-      return updated;
+    updateSettings({
+      notifications: {
+        ...settings.notifications,
+        [key]: !settings.notifications[key],
+      },
     });
+  };
+
+  const setTextSize = (size: 'small' | 'medium' | 'large' | 'extra-large') => {
+    updateSettings({
+      accessibility: {
+        ...settings.accessibility,
+        textSize: size,
+      },
+    });
+  };
+
+  const setDefaultDifficulty = (difficulty: 'Easy' | 'Normal' | 'Hard') => {
+    updateSettings({
+      study: {
+        ...settings.study,
+        defaultDifficulty: difficulty,
+      },
+    });
+  };
+
+  const setDefaultSubjects = (subjects: string[]) => {
+    updateSettings({
+      study: {
+        ...settings.study,
+        defaultSubjects: subjects,
+      },
+    });
+  };
+
+  const toggleStudySounds = () => {
+    updateSettings({
+      theme: {
+        ...settings.theme,
+        studySounds: !settings.theme.studySounds,
+      },
+    });
+  };
+
+  const setCustomColors = (colors: { primary: string; secondary: string; accent: string } | null) => {
+    updateSettings({
+      theme: {
+        ...settings.theme,
+        customColors: colors,
+      },
+    });
+  };
+
+  const getTextSizeMultiplier = () => {
+    switch (settings.accessibility.textSize) {
+      case 'small':
+        return 0.875;
+      case 'medium':
+        return 1;
+      case 'large':
+        return 1.125;
+      case 'extra-large':
+        return 1.25;
+      default:
+        return 1;
+    }
   };
 
   return (
@@ -197,6 +272,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         toggleDarkMode,
         toggleHighContrast,
         toggleNotifications,
+        setTextSize,
+        setDefaultDifficulty,
+        setDefaultSubjects,
+        toggleStudySounds,
+        setCustomColors,
+        getTextSizeMultiplier,
       }}
     >
       {children}

@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLesson } from '@/contexts/LessonContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
@@ -19,6 +20,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, isAuthenticated, signOut } = useAuth();
   const { lessons } = useLesson();
+  const { settings, getTextSizeMultiplier } = useSettings();
 
   const handleSignOut = () => {
     Alert.alert(
@@ -74,28 +76,52 @@ export default function ProfileScreen() {
   const totalFlashcards = lessons.reduce((sum, lesson) => sum + lesson.flashcards.length, 0);
   const totalQuestions = lessons.reduce((sum, lesson) => sum + lesson.examQuestions.length, 0);
 
+  const containerStyle = settings.theme.mode === 'dark'
+    ? [commonStyles.container, styles.darkContainer]
+    : commonStyles.container;
+
+  const textColor = settings.theme.mode === 'dark' ? '#FFFFFF' : colors.text;
+  const cardBg = settings.theme.mode === 'dark' ? '#1a1a1a' : colors.card;
+  const textMultiplier = getTextSizeMultiplier();
+
   return (
-    <View style={commonStyles.container}>
+    <View style={containerStyle}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View style={styles.profileIcon}>
-            <IconSymbol
-              ios_icon_name="person.fill"
-              android_material_icon_name="person"
-              size={40}
-              color={colors.primary}
-            />
+          <View style={[styles.profileIcon, { backgroundColor: colors.secondary + '30' }]}>
+            {user.avatar ? (
+              <Text style={styles.avatarEmoji}>{user.avatar}</Text>
+            ) : (
+              <IconSymbol
+                ios_icon_name="person.fill"
+                android_material_icon_name="person"
+                size={40}
+                color={colors.primary}
+              />
+            )}
           </View>
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
+          <Text style={[
+            styles.userName,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: textColor, fontSize: 24 * textMultiplier }
+          ]}>
+            {user.name}
+          </Text>
+          <Text style={[
+            styles.userEmail,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: colors.textSecondary, fontSize: 14 * textMultiplier }
+          ]}>
+            {user.email}
+          </Text>
           
           {!user.isPremium && (
             <TouchableOpacity
-              style={styles.premiumBanner}
+              style={[styles.premiumBanner, { backgroundColor: cardBg }]}
               onPress={handleUpgradeToPremium}
             >
               <IconSymbol
@@ -105,8 +131,18 @@ export default function ProfileScreen() {
                 color={colors.highlight}
               />
               <View style={styles.premiumBannerText}>
-                <Text style={styles.premiumBannerTitle}>Upgrade to Premium</Text>
-                <Text style={styles.premiumBannerSubtitle}>
+                <Text style={[
+                  styles.premiumBannerTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor, fontSize: 16 * textMultiplier }
+                ]}>
+                  Upgrade to Premium
+                </Text>
+                <Text style={[
+                  styles.premiumBannerSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { fontSize: 13 * textMultiplier }
+                ]}>
                   Unlock all features
                 </Text>
               </View>
@@ -114,123 +150,181 @@ export default function ProfileScreen() {
                 ios_icon_name="chevron.right"
                 android_material_icon_name="chevron-right"
                 size={20}
-                color={colors.text}
+                color={textColor}
               />
             </TouchableOpacity>
           )}
         </View>
 
         <View style={styles.statsSection}>
-          <Text style={[commonStyles.subtitle, styles.sectionTitle]}>Your Stats</Text>
+          <Text style={[
+            commonStyles.subtitle,
+            styles.sectionTitle,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: textColor, fontSize: 20 * textMultiplier }
+          ]}>
+            Your Stats
+          </Text>
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: cardBg }]}>
               <IconSymbol
                 ios_icon_name="book.fill"
                 android_material_icon_name="menu-book"
                 size={32}
                 color={colors.primary}
               />
-              <Text style={styles.statValue}>{lessons.length}</Text>
-              <Text style={styles.statLabel}>Lessons</Text>
+              <Text style={[
+                styles.statValue,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { color: textColor, fontSize: 28 * textMultiplier }
+              ]}>
+                {lessons.length}
+              </Text>
+              <Text style={[
+                styles.statLabel,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { fontSize: 13 * textMultiplier }
+              ]}>
+                Lessons
+              </Text>
             </View>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: cardBg }]}>
               <IconSymbol
                 ios_icon_name="rectangle.stack.fill"
                 android_material_icon_name="style"
                 size={32}
                 color={colors.secondary}
               />
-              <Text style={styles.statValue}>{totalFlashcards}</Text>
-              <Text style={styles.statLabel}>Flashcards</Text>
+              <Text style={[
+                styles.statValue,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { color: textColor, fontSize: 28 * textMultiplier }
+              ]}>
+                {totalFlashcards}
+              </Text>
+              <Text style={[
+                styles.statLabel,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { fontSize: 13 * textMultiplier }
+              ]}>
+                Flashcards
+              </Text>
             </View>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: cardBg }]}>
               <IconSymbol
                 ios_icon_name="flame.fill"
                 android_material_icon_name="local-fire-department"
                 size={32}
                 color={colors.accent}
               />
-              <Text style={styles.statValue}>{user.streak}</Text>
-              <Text style={styles.statLabel}>Day Streak</Text>
+              <Text style={[
+                styles.statValue,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { color: textColor, fontSize: 28 * textMultiplier }
+              ]}>
+                {user.streak}
+              </Text>
+              <Text style={[
+                styles.statLabel,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { fontSize: 13 * textMultiplier }
+              ]}>
+                Day Streak
+              </Text>
             </View>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: cardBg }]}>
               <IconSymbol
                 ios_icon_name="star.fill"
                 android_material_icon_name="star"
                 size={32}
                 color={colors.highlight}
               />
-              <Text style={styles.statValue}>{user.points}</Text>
-              <Text style={styles.statLabel}>Points</Text>
+              <Text style={[
+                styles.statValue,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { color: textColor, fontSize: 28 * textMultiplier }
+              ]}>
+                {user.points}
+              </Text>
+              <Text style={[
+                styles.statLabel,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { fontSize: 13 * textMultiplier }
+              ]}>
+                Points
+              </Text>
             </View>
           </View>
         </View>
 
+        {user.badges && user.badges.length > 0 && (
+          <View style={styles.badgesSection}>
+            <Text style={[
+              commonStyles.subtitle,
+              styles.sectionTitle,
+              settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+              { color: textColor, fontSize: 20 * textMultiplier }
+            ]}>
+              Recent Badges
+            </Text>
+            <View style={styles.badgesGrid}>
+              {user.badges.slice(0, 4).map((badge, index) => (
+                <View key={index} style={[styles.badgeCard, { backgroundColor: cardBg }]}>
+                  <IconSymbol
+                    ios_icon_name="rosette"
+                    android_material_icon_name="emoji-events"
+                    size={28}
+                    color={colors.highlight}
+                  />
+                  <Text style={[
+                    styles.badgeText,
+                    settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                    { color: textColor, fontSize: 13 * textMultiplier }
+                  ]}>
+                    {badge}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         <View style={styles.section}>
-          <Text style={[commonStyles.subtitle, styles.sectionTitle]}>Settings</Text>
+          <Text style={[
+            commonStyles.subtitle,
+            styles.sectionTitle,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: textColor, fontSize: 20 * textMultiplier }
+          ]}>
+            Quick Actions
+          </Text>
           
           <SettingsItem
-            icon="palette"
-            materialIcon="palette"
-            title="Appearance"
-            subtitle="Theme and display settings"
-            onPress={() => Alert.alert('Coming Soon', 'Theme settings will be available soon!')}
-          />
-          
-          <SettingsItem
-            icon="bell"
-            materialIcon="notifications"
-            title="Notifications"
-            subtitle="Manage your notifications"
-            onPress={() => Alert.alert('Coming Soon', 'Notification settings will be available soon!')}
-          />
-          
-          <SettingsItem
-            icon="accessibility"
-            materialIcon="accessibility"
-            title="Accessibility"
-            subtitle="Font size, contrast, and more"
-            onPress={() => Alert.alert('Coming Soon', 'Accessibility settings will be available soon!')}
+            icon="gear"
+            materialIcon="settings"
+            title="Settings"
+            subtitle="Customize your experience"
+            onPress={() => router.push('/(tabs)/settings')}
+            textColor={textColor}
+            cardBg={cardBg}
+            textMultiplier={textMultiplier}
+            dyslexiaFont={settings.accessibility.dyslexiaFont}
           />
           
           <SettingsItem
             icon="chart.bar"
             materialIcon="bar-chart"
             title="Analytics"
-            subtitle="View your progress and insights"
-            onPress={() => Alert.alert('Coming Soon', 'Analytics will be available soon!')}
-          />
-          
-          <SettingsItem
-            icon="gear"
-            materialIcon="settings"
-            title="Study Preferences"
-            subtitle="Customize your learning experience"
-            onPress={() => Alert.alert('Coming Soon', 'Study preferences will be available soon!')}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[commonStyles.subtitle, styles.sectionTitle]}>Account</Text>
-          
-          <SettingsItem
-            icon="person.circle"
-            materialIcon="account-circle"
-            title="Edit Profile"
-            subtitle="Update your information"
-            onPress={() => Alert.alert('Coming Soon', 'Profile editing will be available soon!')}
-          />
-          
-          <SettingsItem
-            icon="lock"
-            materialIcon="lock"
-            title="Security"
-            subtitle="Password and 2FA settings"
-            onPress={() => Alert.alert('Coming Soon', 'Security settings will be available soon!')}
+            subtitle="View your progress"
+            onPress={() => router.push('/(tabs)/analytics')}
+            textColor={textColor}
+            cardBg={cardBg}
+            textMultiplier={textMultiplier}
+            dyslexiaFont={settings.accessibility.dyslexiaFont}
           />
           
           <TouchableOpacity
-            style={styles.settingsItem}
+            style={[styles.settingsItem, { backgroundColor: cardBg }]}
             onPress={handleSignOut}
           >
             <View style={[styles.settingsIcon, styles.signOutIcon]}>
@@ -242,7 +336,14 @@ export default function ProfileScreen() {
               />
             </View>
             <View style={styles.settingsContent}>
-              <Text style={[styles.settingsTitle, styles.signOutText]}>Sign Out</Text>
+              <Text style={[
+                styles.settingsTitle,
+                styles.signOutText,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { fontSize: 15 * textMultiplier }
+              ]}>
+                Sign Out
+              </Text>
             </View>
             <IconSymbol
               ios_icon_name="chevron.right"
@@ -254,8 +355,20 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>SmartStudy AI v1.0.0</Text>
-          <Text style={styles.footerText}>Made with ❤️ for students</Text>
+          <Text style={[
+            styles.footerText,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { fontSize: 12 * textMultiplier }
+          ]}>
+            SmartStudy AI v1.0.0
+          </Text>
+          <Text style={[
+            styles.footerText,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { fontSize: 12 * textMultiplier }
+          ]}>
+            Made with ❤️ for students
+          </Text>
         </View>
       </ScrollView>
     </View>
@@ -268,14 +381,22 @@ const SettingsItem = ({
   title,
   subtitle,
   onPress,
+  textColor,
+  cardBg,
+  textMultiplier,
+  dyslexiaFont,
 }: {
   icon: string;
   materialIcon: string;
   title: string;
   subtitle: string;
   onPress: () => void;
+  textColor: string;
+  cardBg: string;
+  textMultiplier: number;
+  dyslexiaFont: boolean;
 }) => (
-  <TouchableOpacity style={styles.settingsItem} onPress={onPress}>
+  <TouchableOpacity style={[styles.settingsItem, { backgroundColor: cardBg }]} onPress={onPress}>
     <View style={styles.settingsIcon}>
       <IconSymbol
         ios_icon_name={icon}
@@ -285,8 +406,20 @@ const SettingsItem = ({
       />
     </View>
     <View style={styles.settingsContent}>
-      <Text style={styles.settingsTitle}>{title}</Text>
-      <Text style={styles.settingsSubtitle}>{subtitle}</Text>
+      <Text style={[
+        styles.settingsTitle,
+        dyslexiaFont && styles.dyslexiaFont,
+        { color: textColor, fontSize: 15 * textMultiplier }
+      ]}>
+        {title}
+      </Text>
+      <Text style={[
+        styles.settingsSubtitle,
+        dyslexiaFont && styles.dyslexiaFont,
+        { fontSize: 13 * textMultiplier }
+      ]}>
+        {subtitle}
+      </Text>
     </View>
     <IconSymbol
       ios_icon_name="chevron.right"
@@ -305,6 +438,9 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 48 : 0,
     paddingBottom: 120,
   },
+  darkContainer: {
+    backgroundColor: '#121212',
+  },
   header: {
     alignItems: 'center',
     paddingVertical: 32,
@@ -318,6 +454,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+  },
+  avatarEmoji: {
+    fontSize: 50,
   },
   userName: {
     fontSize: 24,
@@ -388,6 +527,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
   },
+  badgesSection: {
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
+  badgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  badgeCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: colors.card,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 8,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 3,
+  },
+  badgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+    textAlign: 'center',
+  },
   section: {
     paddingHorizontal: 20,
     marginBottom: 32,
@@ -447,5 +612,8 @@ const styles = StyleSheet.create({
   },
   signInButton: {
     minWidth: 200,
+  },
+  dyslexiaFont: {
+    fontFamily: 'OpenDyslexic',
   },
 });

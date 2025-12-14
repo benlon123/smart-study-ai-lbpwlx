@@ -111,6 +111,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  avatar?: string;
   isPremium: boolean;
   premiumGrant?: PremiumGrant;
   lessons: Lesson[];
@@ -175,4 +176,12 @@ export interface AppSettings {
   aiGenerationLimit: number;
   defaultTaskCount: number;
   maintenanceMode: boolean;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unlockedAt?: Date;
 }
