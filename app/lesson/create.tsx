@@ -59,10 +59,19 @@ export default function CreateLessonScreen() {
       return;
     }
 
+    console.log('Starting lesson creation process...');
     setShowSubjectModal(false);
     setIsGenerating(true);
 
     try {
+      console.log('Calling createLesson with:', {
+        lessonName,
+        selectedSubject,
+        selectedTopic,
+        selectedLevel,
+        selectedDifficulty,
+      });
+
       const newLesson = await createLesson(
         lessonName,
         selectedSubject,
@@ -71,22 +80,30 @@ export default function CreateLessonScreen() {
         selectedDifficulty!
       );
       
+      console.log('Lesson created successfully:', newLesson);
+      
+      // Reset generating state before navigation
+      setIsGenerating(false);
+      
+      // Navigate back to home first
+      router.back();
+      
+      // Small delay to ensure navigation completes
+      setTimeout(() => {
+        // Then navigate to the lesson detail page
+        router.push(`/lesson/${newLesson.id}`);
+      }, 100);
+      
+      // Show success message
       Alert.alert(
         'Lesson Created! 📚',
         'Your lesson container has been created. You can now generate Notes, Flashcards, or Quiz inside the lesson.',
-        [
-          {
-            text: 'View Lesson',
-            onPress: () => {
-              router.back();
-              router.push(`/lesson/${newLesson.id}`);
-            },
-          },
-        ]
+        [{ text: 'OK' }]
       );
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create lesson');
+      console.error('Error in handleSubjectTopicSelect:', error);
       setIsGenerating(false);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create lesson');
     }
   };
 
