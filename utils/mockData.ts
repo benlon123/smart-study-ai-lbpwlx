@@ -128,6 +128,64 @@ export const subjectTopics: SubjectTopic[] = [
   }
 ];
 
+// Enhanced content generation with specific context
+const getTopicSpecificContent = (subject: Subject, topic: string): { concepts: string[], examples: string[], keyTerms: string[] } => {
+  const contentMap: Record<string, any> = {
+    'English Language-Grammar': {
+      concepts: ['sentence structure', 'parts of speech', 'punctuation rules', 'verb tenses', 'subject-verb agreement'],
+      examples: ['complex sentences with subordinate clauses', 'proper use of semicolons', 'present perfect continuous tense'],
+      keyTerms: ['noun', 'verb', 'adjective', 'adverb', 'conjunction', 'preposition', 'clause', 'phrase']
+    },
+    'English Literature-Poetry': {
+      concepts: ['poetic devices', 'meter and rhythm', 'rhyme schemes', 'imagery', 'symbolism', 'tone and mood'],
+      examples: ['iambic pentameter in Shakespeare', 'metaphors in Romantic poetry', 'alliteration in modern verse'],
+      keyTerms: ['simile', 'metaphor', 'personification', 'alliteration', 'assonance', 'enjambment', 'caesura', 'stanza']
+    },
+    'Mathematics-Algebra': {
+      concepts: ['solving linear equations', 'factorizing quadratics', 'simultaneous equations', 'algebraic manipulation'],
+      examples: ['expanding (x+3)(x-2)', 'solving 2x + 5 = 13', 'factorizing x² + 5x + 6'],
+      keyTerms: ['variable', 'coefficient', 'constant', 'expression', 'equation', 'factor', 'expand', 'simplify']
+    },
+    'Physics-Mechanics': {
+      concepts: ['Newton\'s laws of motion', 'forces and acceleration', 'momentum and impulse', 'work and energy'],
+      examples: ['calculating force using F=ma', 'conservation of momentum in collisions', 'kinetic energy calculations'],
+      keyTerms: ['force', 'mass', 'acceleration', 'velocity', 'momentum', 'energy', 'friction', 'gravity']
+    },
+    'Biology-Cell Biology': {
+      concepts: ['cell structure and function', 'organelles', 'cell membrane transport', 'mitosis and meiosis'],
+      examples: ['osmosis in plant cells', 'mitochondria producing ATP', 'DNA replication during cell division'],
+      keyTerms: ['nucleus', 'mitochondria', 'chloroplast', 'ribosome', 'cytoplasm', 'membrane', 'organelle', 'diffusion']
+    },
+    'Chemistry-Atomic Structure': {
+      concepts: ['atomic models', 'electron configuration', 'isotopes', 'ions', 'periodic trends'],
+      examples: ['electron shells in sodium', 'isotopes of carbon', 'formation of ionic bonds'],
+      keyTerms: ['proton', 'neutron', 'electron', 'nucleus', 'shell', 'isotope', 'ion', 'atomic number']
+    },
+    'Physical Education-Anatomy': {
+      concepts: ['skeletal system structure', 'muscle types and functions', 'joint movements', 'cardiovascular system'],
+      examples: ['hinge joint in the knee', 'cardiac muscle contraction', 'flexion and extension movements'],
+      keyTerms: ['bone', 'muscle', 'joint', 'ligament', 'tendon', 'cartilage', 'flexion', 'extension']
+    },
+    'BTEC Sport-Anatomy & Physiology': {
+      concepts: ['musculoskeletal system in sport', 'energy systems', 'respiratory system during exercise', 'cardiovascular adaptations'],
+      examples: ['lactic acid system in sprinting', 'VO2 max improvements', 'muscle hypertrophy from training'],
+      keyTerms: ['aerobic', 'anaerobic', 'ATP', 'lactic acid', 'muscle fiber', 'cardiac output', 'stroke volume']
+    }
+  };
+
+  const key = `${subject}-${topic}`;
+  if (contentMap[key]) {
+    return contentMap[key];
+  }
+
+  // Default content for topics not specifically mapped
+  return {
+    concepts: [`core principles of ${topic}`, `key theories in ${topic}`, `practical applications of ${topic}`],
+    examples: [`real-world examples of ${topic}`, `case studies in ${topic}`, `problem-solving with ${topic}`],
+    keyTerms: [`fundamental ${topic} terminology`, `advanced ${topic} concepts`, `${topic} definitions`]
+  };
+};
+
 export const generateMockLesson = (
   name: string,
   subject: Subject,
@@ -156,94 +214,109 @@ export const generateMockLesson = (
 };
 
 export const generateMockNotes = (subject: Subject, topic: string, level: Level, difficulty: Difficulty): string => {
-  const notes = `# ${subject} - ${topic}
+  const content = getTopicSpecificContent(subject, topic);
+  
+  const notes = `# ${topic} in ${subject}
 ## ${level} Level (${difficulty} Difficulty)
 
 ## Introduction
-Welcome to this comprehensive lesson on **${topic}** in ${subject}. This AI-generated content is specifically tailored for ${level} students studying at ${difficulty.toLowerCase()} difficulty level. Understanding ${topic} is essential for your academic success and forms a crucial foundation for more advanced concepts.
+This lesson focuses on the specific content and concepts within **${topic}** as part of your ${subject} studies. You'll learn the actual material, theories, and practical applications that are essential for your ${level} examinations.
 
-## Key Concepts
+## Core Content
 
-### Understanding ${topic}
-${topic} is a fundamental concept in ${subject} that you need to master for your ${level} examinations. This topic connects to many other areas of ${subject} and has practical applications in real-world scenarios.
+### Key Concepts in ${topic}
+Understanding ${topic} requires mastery of several fundamental concepts:
 
-**Core Principles:**
-- **Foundation**: The basic principles that underpin ${topic} and why they matter
-- **Application**: How ${topic} is used in practical situations and problem-solving
-- **Connection**: How ${topic} relates to other concepts in ${subject}
-- **Importance**: Why mastering ${topic} is crucial for exam success
+${content.concepts.map((concept, i) => `**${i + 1}. ${concept.charAt(0).toUpperCase() + concept.slice(1)}**
+This is a crucial element of ${topic} that you need to understand thoroughly. ${difficulty === 'Hard' ? 'At this advanced level, you should be able to analyze and evaluate this concept critically.' : difficulty === 'Normal' ? 'You should be able to explain and apply this concept in various contexts.' : 'Focus on understanding the basic principles of this concept.'}`).join('\n\n')}
 
-### Deep Dive
-Let's explore ${topic} in greater detail. At ${difficulty.toLowerCase()} difficulty, you need to understand not just the basic concepts, but also how to apply them effectively.
+### Practical Examples
+Let's explore how these concepts work in practice:
 
-#### Essential Terms
-- **Key Term 1**: A critical concept that forms the foundation of ${topic}
-- **Key Term 2**: An important principle that builds on the foundation
-- **Key Term 3**: Advanced terminology essential for ${level} success
-- **Key Term 4**: Practical application concept for real-world problems
+${content.examples.map((example, i) => `**Example ${i + 1}: ${example}**
+${difficulty === 'Hard' ? 'Analyze this example critically, considering multiple perspectives and implications.' : difficulty === 'Normal' ? 'Study this example and think about how you could apply similar principles.' : 'This example demonstrates the basic application of the concept.'}`).join('\n\n')}
 
-### Practical Application
-Understanding theory is important, but ${level} examinations require you to demonstrate practical application. Here's how ${topic} is used:
+### Essential Terminology
+Master these key terms for ${topic}:
 
-1. **Problem-Solving**: Apply ${topic} principles to solve complex problems
-2. **Analysis**: Break down questions and identify key elements
-3. **Evaluation**: Assess different approaches and choose the most effective method
+${content.keyTerms.map((term, i) => `- **${term}**: A fundamental term in ${topic} that you must be able to define and use correctly in your ${level} exams.`).join('\n')}
 
-### Exam Techniques
-For ${level} success in ${subject}, you must:
-- Clearly explain ${topic} concepts using appropriate terminology
-- Demonstrate understanding through worked examples
-- Apply knowledge to unfamiliar situations
-- Show critical thinking and analytical skills
+## Application and Analysis
+${difficulty === 'Hard' ? `At this advanced level, you need to demonstrate critical thinking and analytical skills. Consider how ${topic} connects to broader themes in ${subject}, evaluate different perspectives, and synthesize information from multiple sources.` : difficulty === 'Normal' ? `Practice applying these concepts to different scenarios. Think about how ${topic} relates to other areas of ${subject} and develop your analytical skills.` : `Focus on understanding the core concepts and being able to explain them clearly. Practice using the terminology correctly and work through basic examples.`}
 
-## Practice Approach
-To master ${topic}, follow this study plan:
-- Review these notes daily for 10-15 minutes
-- Create your own examples and practice problems
-- Test yourself regularly to identify weak areas
-- Connect ${topic} to other concepts you've learned
+## Exam Preparation
+For ${level} success:
+- Understand and memorize key terminology
+- Practice explaining concepts in your own words
+- Work through examples regularly
+- ${difficulty === 'Hard' ? 'Develop critical analysis and evaluation skills' : difficulty === 'Normal' ? 'Apply concepts to new situations' : 'Master the fundamental principles'}
 
 ## Summary
-This lesson has introduced the essential aspects of ${topic} in ${subject} at ${level} level. The key to success is consistent practice and active engagement with the material. Make sure you understand each concept before moving forward.
+This lesson has covered the essential content within ${topic}, including key concepts, practical examples, and important terminology. ${difficulty === 'Hard' ? 'Continue to develop your critical thinking and analytical skills.' : difficulty === 'Normal' ? 'Practice applying these concepts regularly.' : 'Review these fundamentals until you feel confident.'}
 
 ## Next Steps
-Once you've thoroughly reviewed these notes, you can generate additional study materials including flashcards for spaced repetition and interactive quizzes to test your understanding. Focus on mastering the core concepts first before moving to practice questions.`;
+Generate flashcards to memorize key terms and concepts, then test your understanding with the quiz. Focus on the actual content and applications rather than just the topic name.`;
 
   return notes;
 };
 
 export const generateMockFlashcards = (subject: Subject, topic: string, count: number) => {
+  const content = getTopicSpecificContent(subject, topic);
   const flashcards = [];
-  for (let i = 1; i <= count; i++) {
+  
+  // Generate flashcards based on actual content
+  for (let i = 0; i < Math.min(count, content.keyTerms.length); i++) {
     flashcards.push({
       id: `flashcard-${i}-${Date.now()}`,
-      question: `What is key concept ${i} in ${topic}?`,
-      answer: `This is the answer to concept ${i} in ${topic}. It explains the fundamental principle and demonstrates how it applies to ${subject}. Understanding this concept is crucial for exam success and builds the foundation for more advanced topics.`,
+      question: `Define: ${content.keyTerms[i]}`,
+      answer: `${content.keyTerms[i]} is a key term in ${topic}. It refers to ${content.concepts[i % content.concepts.length]}. This concept is essential for understanding ${topic} and appears frequently in ${subject} examinations.`,
       mastered: false,
       lastReviewed: undefined,
       nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
   }
+  
+  // Add concept-based flashcards
+  for (let i = 0; i < Math.min(count - flashcards.length, content.concepts.length); i++) {
+    flashcards.push({
+      id: `flashcard-concept-${i}-${Date.now()}`,
+      question: `Explain the concept: ${content.concepts[i]}`,
+      answer: `${content.concepts[i]} is a fundamental principle in ${topic}. ${content.examples[i % content.examples.length]} demonstrates this concept in practice. Understanding this is crucial for applying ${topic} knowledge effectively.`,
+      mastered: false,
+      lastReviewed: undefined,
+      nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+  }
+  
   return flashcards;
 };
 
 export const generateMockExamQuestions = (subject: Subject, topic: string, difficulty: Difficulty, count: number) => {
+  const content = getTopicSpecificContent(subject, topic);
   const questions = [];
+  
   for (let i = 1; i <= count; i++) {
     const isMultipleChoice = i % 2 === 0;
+    const concept = content.concepts[i % content.concepts.length];
+    const example = content.examples[i % content.examples.length];
+    
     questions.push({
       id: `question-${i}-${Date.now()}`,
-      question: `${difficulty} question ${i}: Explain the main principle of ${topic} in ${subject} and how it applies to real-world scenarios.`,
+      question: isMultipleChoice 
+        ? `Which of the following best describes ${concept} in ${topic}?`
+        : `Explain how ${concept} applies in ${topic}. Use ${example} to support your answer.`,
       type: isMultipleChoice ? 'multiple-choice' : 'short-answer',
       options: isMultipleChoice ? [
-        `Option A: First possible answer about ${topic}`,
-        `Option B: Correct answer explaining ${topic} principles`,
-        `Option C: Third possible answer about ${topic}`,
-        `Option D: Fourth possible answer about ${topic}`,
+        `A definition that is partially correct but missing key elements`,
+        `The correct comprehensive definition of ${concept} with proper context`,
+        `A common misconception about ${concept}`,
+        `An unrelated concept from a different area of ${subject}`,
       ] : undefined,
-      correctAnswer: isMultipleChoice ? `Option B: Correct answer explaining ${topic} principles` : `A detailed explanation of ${topic} demonstrating understanding of key concepts and their application.`,
-      explanation: `This question tests your understanding of ${topic} in ${subject}. The correct answer demonstrates knowledge of the key principles, their application, and critical thinking. ${difficulty === 'Hard' ? 'At this difficulty level, you need to show deep analysis and synthesis of concepts.' : ''}`,
-      hint: `Think about the core principles of ${topic} and how they relate to ${subject}. Consider real-world examples.`,
+      correctAnswer: isMultipleChoice 
+        ? `The correct comprehensive definition of ${concept} with proper context`
+        : `A comprehensive answer should explain ${concept}, demonstrate understanding through ${example}, and show how this applies to ${topic}. ${difficulty === 'Hard' ? 'Include critical analysis and evaluation.' : ''}`,
+      explanation: `This question tests your understanding of ${concept} within ${topic}. ${difficulty === 'Hard' ? 'At this level, you need to demonstrate critical thinking, analysis, and the ability to synthesize information.' : difficulty === 'Normal' ? 'You should be able to explain the concept and apply it to examples.' : 'Focus on understanding the basic principles and being able to explain them clearly.'}`,
+      hint: `Think about ${concept} and how it relates to ${example}. Consider the key terminology: ${content.keyTerms.slice(0, 3).join(', ')}.`,
       marks: difficulty === 'Easy' ? 2 : difficulty === 'Normal' ? 4 : 6,
     });
   }

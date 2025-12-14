@@ -2,8 +2,11 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function TabLayout() {
+  const { isAuthenticated } = useAuth();
+
   const tabs: TabBarItem[] = [
     {
       name: '(home)',
@@ -44,7 +47,7 @@ export default function TabLayout() {
         <Stack.Screen key="analytics" name="analytics" />
         <Stack.Screen key="settings" name="settings" />
       </Stack>
-      <FloatingTabBar tabs={tabs} />
+      {isAuthenticated && <FloatingTabBar tabs={tabs} />}
     </>
   );
 }

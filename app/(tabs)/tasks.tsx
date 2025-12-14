@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,14 +21,343 @@ const levels: Level[] = ['GCSE', 'A-Level'];
 
 interface TaskItem {
   id: string;
-  type: 'lesson' | 'flashcards' | 'notes' | 'quiz' | 'timed-challenge';
+  type: 'lesson' | 'flashcards' | 'notes' | 'quiz' | 'practice' | 'review';
   title: string;
+  description: string;
   subject: Subject;
   level: Level;
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
   points: number;
 }
+
+// Generate content-based tasks for different subjects
+const generateContentBasedTasks = (subject: Subject, level: Level): TaskItem[] => {
+  const taskMap: Record<string, TaskItem[]> = {
+    'English Language': [
+      {
+        id: 'eng-lang-1',
+        type: 'practice',
+        title: 'Identify Similes and Metaphors',
+        description: 'Practice identifying and analyzing similes and metaphors in text passages',
+        subject: 'English Language',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 50,
+      },
+      {
+        id: 'eng-lang-2',
+        type: 'practice',
+        title: 'Analyze Persuasive Language Techniques',
+        description: 'Study rhetorical devices, emotive language, and persuasive writing techniques',
+        subject: 'English Language',
+        level,
+        completed: false,
+        priority: 'medium',
+        points: 40,
+      },
+      {
+        id: 'eng-lang-3',
+        type: 'review',
+        title: 'Master Sentence Structure',
+        description: 'Review simple, compound, and complex sentences with subordinate clauses',
+        subject: 'English Language',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 45,
+      },
+    ],
+    'English Literature': [
+      {
+        id: 'eng-lit-1',
+        type: 'practice',
+        title: 'Analyze Poetic Devices',
+        description: 'Identify and explain alliteration, assonance, personification, and imagery in poetry',
+        subject: 'English Literature',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 55,
+      },
+      {
+        id: 'eng-lit-2',
+        type: 'review',
+        title: 'Study Character Development',
+        description: 'Analyze how characters develop throughout literary texts and their motivations',
+        subject: 'English Literature',
+        level,
+        completed: false,
+        priority: 'medium',
+        points: 45,
+      },
+      {
+        id: 'eng-lit-3',
+        type: 'practice',
+        title: 'Explore Themes and Symbolism',
+        description: 'Identify recurring themes and symbolic elements in literature',
+        subject: 'English Literature',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 50,
+      },
+    ],
+    'Mathematics': [
+      {
+        id: 'math-1',
+        type: 'practice',
+        title: 'Solve Quadratic Equations',
+        description: 'Practice factorizing, completing the square, and using the quadratic formula',
+        subject: 'Mathematics',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 60,
+      },
+      {
+        id: 'math-2',
+        type: 'practice',
+        title: 'Work with Trigonometric Ratios',
+        description: 'Apply sine, cosine, and tangent to solve problems with right-angled triangles',
+        subject: 'Mathematics',
+        level,
+        completed: false,
+        priority: 'medium',
+        points: 50,
+      },
+      {
+        id: 'math-3',
+        type: 'review',
+        title: 'Master Algebraic Manipulation',
+        description: 'Practice expanding brackets, factorizing expressions, and simplifying fractions',
+        subject: 'Mathematics',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 55,
+      },
+    ],
+    'Physics': [
+      {
+        id: 'physics-1',
+        type: 'practice',
+        title: 'Apply Newton\'s Laws of Motion',
+        description: 'Calculate forces, acceleration, and momentum using F=ma and related equations',
+        subject: 'Physics',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 60,
+      },
+      {
+        id: 'physics-2',
+        type: 'practice',
+        title: 'Analyze Electrical Circuits',
+        description: 'Calculate current, voltage, and resistance in series and parallel circuits',
+        subject: 'Physics',
+        level,
+        completed: false,
+        priority: 'medium',
+        points: 50,
+      },
+      {
+        id: 'physics-3',
+        type: 'review',
+        title: 'Study Energy Transfers',
+        description: 'Understand kinetic, potential, and thermal energy with conservation principles',
+        subject: 'Physics',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 55,
+      },
+    ],
+    'Chemistry': [
+      {
+        id: 'chem-1',
+        type: 'practice',
+        title: 'Balance Chemical Equations',
+        description: 'Practice balancing equations and understanding stoichiometry',
+        subject: 'Chemistry',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 50,
+      },
+      {
+        id: 'chem-2',
+        type: 'review',
+        title: 'Master the Periodic Table',
+        description: 'Study element groups, periods, and trends in atomic properties',
+        subject: 'Chemistry',
+        level,
+        completed: false,
+        priority: 'medium',
+        points: 45,
+      },
+      {
+        id: 'chem-3',
+        type: 'practice',
+        title: 'Understand Ionic and Covalent Bonding',
+        description: 'Analyze electron transfer and sharing in chemical bonds',
+        subject: 'Chemistry',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 55,
+      },
+    ],
+    'Biology': [
+      {
+        id: 'bio-1',
+        type: 'practice',
+        title: 'Study Cell Structure and Function',
+        description: 'Identify organelles and explain their roles in cellular processes',
+        subject: 'Biology',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 50,
+      },
+      {
+        id: 'bio-2',
+        type: 'review',
+        title: 'Understand Photosynthesis and Respiration',
+        description: 'Compare and contrast these key metabolic processes',
+        subject: 'Biology',
+        level,
+        completed: false,
+        priority: 'medium',
+        points: 45,
+      },
+      {
+        id: 'bio-3',
+        type: 'practice',
+        title: 'Analyze Genetic Inheritance',
+        description: 'Work with Punnett squares and understand dominant/recessive alleles',
+        subject: 'Biology',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 55,
+      },
+    ],
+    'Physical Education': [
+      {
+        id: 'pe-1',
+        type: 'practice',
+        title: 'Identify Muscle Groups and Functions',
+        description: 'Study major muscles, their locations, and roles in movement',
+        subject: 'Physical Education',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 50,
+      },
+      {
+        id: 'pe-2',
+        type: 'review',
+        title: 'Understand Joint Types and Movements',
+        description: 'Learn about hinge, ball-and-socket joints and movements like flexion/extension',
+        subject: 'Physical Education',
+        level,
+        completed: false,
+        priority: 'medium',
+        points: 45,
+      },
+      {
+        id: 'pe-3',
+        type: 'practice',
+        title: 'Analyze Energy Systems in Sport',
+        description: 'Study aerobic, anaerobic, and ATP-PC systems in different sports',
+        subject: 'Physical Education',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 55,
+      },
+    ],
+    'BTEC Sport': [
+      {
+        id: 'btec-sport-1',
+        type: 'practice',
+        title: 'Study Musculoskeletal System in Sport',
+        description: 'Analyze how bones, muscles, and joints work together in athletic performance',
+        subject: 'BTEC Sport',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 55,
+      },
+      {
+        id: 'btec-sport-2',
+        type: 'review',
+        title: 'Understand Energy Systems',
+        description: 'Learn about aerobic, lactic acid, and ATP-PC systems in different sports',
+        subject: 'BTEC Sport',
+        level,
+        completed: false,
+        priority: 'medium',
+        points: 50,
+      },
+      {
+        id: 'btec-sport-3',
+        type: 'practice',
+        title: 'Analyze Training Methods',
+        description: 'Study interval training, circuit training, and plyometrics for performance',
+        subject: 'BTEC Sport',
+        level,
+        completed: false,
+        priority: 'high',
+        points: 60,
+      },
+    ],
+  };
+
+  // Return tasks for the subject, or generate generic content-based tasks
+  if (taskMap[subject]) {
+    return taskMap[subject];
+  }
+
+  // Generic content-based tasks for subjects not specifically mapped
+  return [
+    {
+      id: `${subject}-1`,
+      type: 'practice',
+      title: `Practice Core ${subject} Concepts`,
+      description: `Work through key concepts and principles within ${subject}`,
+      subject,
+      level,
+      completed: false,
+      priority: 'high',
+      points: 50,
+    },
+    {
+      id: `${subject}-2`,
+      type: 'review',
+      title: `Review ${subject} Terminology`,
+      description: `Master essential terms and definitions in ${subject}`,
+      subject,
+      level,
+      completed: false,
+      priority: 'medium',
+      points: 40,
+    },
+    {
+      id: `${subject}-3`,
+      type: 'practice',
+      title: `Apply ${subject} Knowledge`,
+      description: `Practice applying ${subject} concepts to real-world scenarios`,
+      subject,
+      level,
+      completed: false,
+      priority: 'high',
+      points: 55,
+    },
+  ];
+};
 
 export default function TasksScreen() {
   const router = useRouter();
@@ -38,58 +367,25 @@ export default function TasksScreen() {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
-  const [tasks, setTasks] = useState<TaskItem[]>([
-    {
-      id: '1',
-      type: 'lesson',
-      title: 'Complete Algebra Lesson',
-      subject: 'Mathematics',
-      level: 'GCSE',
-      completed: false,
-      priority: 'high',
-      points: 50,
-    },
-    {
-      id: '2',
-      type: 'flashcards',
-      title: 'Review Physics Flashcards',
-      subject: 'Physics',
-      level: 'A-Level',
-      completed: false,
-      priority: 'medium',
-      points: 30,
-    },
-    {
-      id: '3',
-      type: 'quiz',
-      title: 'Chemistry Quiz',
-      subject: 'Chemistry',
-      level: 'GCSE',
-      completed: false,
-      priority: 'high',
-      points: 75,
-    },
-    {
-      id: '4',
-      type: 'notes',
-      title: 'Review Biology Notes',
-      subject: 'Biology',
-      level: 'GCSE',
-      completed: true,
-      priority: 'medium',
-      points: 40,
-    },
-    {
-      id: '5',
-      type: 'lesson',
-      title: 'Complete English Literature Lesson',
-      subject: 'English Literature',
-      level: 'A-Level',
-      completed: false,
-      priority: 'high',
-      points: 60,
-    },
-  ]);
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
+
+  // Generate tasks based on selected level and subject
+  useEffect(() => {
+    const allTasks: TaskItem[] = [];
+    
+    if (selectedSubject) {
+      // Generate tasks for the selected subject
+      allTasks.push(...generateContentBasedTasks(selectedSubject, selectedLevel));
+    } else {
+      // Generate tasks for all subjects at the selected level
+      const subjects = getSubjectsForLevel(selectedLevel);
+      subjects.slice(0, 5).forEach(subject => {
+        allTasks.push(...generateContentBasedTasks(subject, selectedLevel).slice(0, 2));
+      });
+    }
+    
+    setTasks(allTasks);
+  }, [selectedLevel, selectedSubject]);
 
   if (!isAuthenticated) {
     return (
@@ -234,7 +530,7 @@ export default function TasksScreen() {
           <View>
             <Text style={styles.headerTitle}>Task Planner</Text>
             <Text style={commonStyles.textSecondary}>
-              Track your study progress
+              Content-based study tasks
             </Text>
           </View>
           <View style={styles.streakBadge}>
@@ -398,6 +694,9 @@ export default function TasksScreen() {
                       >
                         {task.title}
                       </Text>
+                      <Text style={styles.taskDescription} numberOfLines={2}>
+                        {task.description}
+                      </Text>
                       <View style={styles.taskMeta}>
                         <View style={styles.taskBadge}>
                           <Text style={styles.taskBadgeText}>{task.subject}</Text>
@@ -443,7 +742,7 @@ export default function TasksScreen() {
             <Text style={styles.aiTitle}>AI Suggestions</Text>
           </View>
           <Text style={styles.aiText}>
-            Based on your performance, we recommend focusing on {selectedSubject || 'Mathematics'} and completing 2 more tasks today to maintain your streak.
+            Focus on practicing {selectedSubject || 'core concepts'} to strengthen your understanding. Complete {remainingTasksCount} more {remainingTasksCount === 1 ? 'task' : 'tasks'} today to maintain your streak!
           </Text>
         </View>
       </ScrollView>
@@ -673,11 +972,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   taskTitleCompleted: {
     textDecorationLine: 'line-through',
     color: colors.textSecondary,
+  },
+  taskDescription: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 6,
+    lineHeight: 18,
   },
   taskMeta: {
     flexDirection: 'row',
