@@ -14,25 +14,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLesson } from '@/contexts/LessonContext';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { Subject, Level, Difficulty } from '@/types/lesson';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { lessons } = useLesson();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState<Subject | 'All'>('All');
-  const [selectedLevel, setSelectedLevel] = useState<Level | 'All'>('All');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | 'All'>('All');
 
   const filteredLessons = lessons.filter(lesson => {
-    const matchesSearch = lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lesson.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSubject = selectedSubject === 'All' || lesson.subject === selectedSubject;
-    const matchesLevel = selectedLevel === 'All' || lesson.level === selectedLevel;
-    const matchesDifficulty = selectedDifficulty === 'All' || lesson.difficulty === selectedDifficulty;
+    const matchesSearch = 
+      lesson.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lesson.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lesson.topic.toLowerCase().includes(searchQuery.toLowerCase());
     
-    return matchesSearch && matchesSubject && matchesLevel && matchesDifficulty;
+    return matchesSearch;
   });
 
   if (!isAuthenticated) {
@@ -85,7 +80,7 @@ export default function HomeScreen() {
           <View style={styles.statsContainer}>
             <View style={styles.statBadge}>
               <IconSymbol
-                ios_icon_name="flame"
+                ios_icon_name="flame.fill"
                 android_material_icon_name="local-fire-department"
                 size={16}
                 color={colors.accent}
@@ -95,136 +90,88 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.searchContainer}>
+        <TouchableOpacity
+          style={styles.createLessonButton}
+          onPress={() => router.push('/lesson/create')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.createLessonIcon}>
+            <IconSymbol
+              ios_icon_name="plus.circle.fill"
+              android_material_icon_name="add-circle"
+              size={32}
+              color={colors.primary}
+            />
+          </View>
+          <View style={styles.createLessonContent}>
+            <Text style={styles.createLessonTitle}>Create New Lesson</Text>
+            <Text style={styles.createLessonSubtitle}>
+              AI-powered lessons with notes, flashcards & quizzes
+            </Text>
+          </View>
           <IconSymbol
-            ios_icon_name="magnifyingglass"
-            android_material_icon_name="search"
-            size={20}
+            ios_icon_name="chevron.right"
+            android_material_icon_name="chevron-right"
+            size={24}
             color={colors.textSecondary}
           />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search lessons..."
-            placeholderTextColor={colors.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
+        </TouchableOpacity>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterScroll}
-          contentContainerStyle={styles.filterContainer}
-        >
-          <FilterChip
-            label="All Subjects"
-            isSelected={selectedSubject === 'All'}
-            onPress={() => setSelectedSubject('All')}
-          />
-          <FilterChip
-            label="Mathematics"
-            isSelected={selectedSubject === 'Mathematics'}
-            onPress={() => setSelectedSubject('Mathematics')}
-          />
-          <FilterChip
-            label="English"
-            isSelected={selectedSubject === 'English'}
-            onPress={() => setSelectedSubject('English')}
-          />
-          <FilterChip
-            label="Science"
-            isSelected={selectedSubject === 'Science'}
-            onPress={() => setSelectedSubject('Science')}
-          />
-        </ScrollView>
+        {lessons.length > 0 && (
+          <>
+            <View style={styles.searchContainer}>
+              <IconSymbol
+                ios_icon_name="magnifyingglass"
+                android_material_icon_name="search"
+                size={20}
+                color={colors.textSecondary}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search lessons..."
+                placeholderTextColor={colors.textSecondary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
 
-        <View style={styles.levelDifficultyContainer}>
-          <View style={styles.filterGroup}>
-            <Text style={styles.filterLabel}>Level:</Text>
-            <TouchableOpacity
-              style={[styles.smallChip, selectedLevel === 'All' && styles.smallChipSelected]}
-              onPress={() => setSelectedLevel('All')}
-            >
-              <Text style={[styles.smallChipText, selectedLevel === 'All' && styles.smallChipTextSelected]}>
-                All
+            <View style={styles.lessonsHeader}>
+              <Text style={commonStyles.subtitle}>My Lessons</Text>
+              <Text style={commonStyles.textSecondary}>
+                {filteredLessons.length} {filteredLessons.length === 1 ? 'lesson' : 'lessons'}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.smallChip, selectedLevel === 'GCSE' && styles.smallChipSelected]}
-              onPress={() => setSelectedLevel('GCSE')}
-            >
-              <Text style={[styles.smallChipText, selectedLevel === 'GCSE' && styles.smallChipTextSelected]}>
-                GCSE
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.smallChip, selectedLevel === 'A-Level' && styles.smallChipSelected]}
-              onPress={() => setSelectedLevel('A-Level')}
-            >
-              <Text style={[styles.smallChipText, selectedLevel === 'A-Level' && styles.smallChipTextSelected]}>
-                A-Level
-              </Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+          </>
+        )}
 
-          <View style={styles.filterGroup}>
-            <Text style={styles.filterLabel}>Difficulty:</Text>
-            <TouchableOpacity
-              style={[styles.smallChip, selectedDifficulty === 'All' && styles.smallChipSelected]}
-              onPress={() => setSelectedDifficulty('All')}
-            >
-              <Text style={[styles.smallChipText, selectedDifficulty === 'All' && styles.smallChipTextSelected]}>
-                All
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.smallChip, selectedDifficulty === 'Easy' && styles.smallChipSelected]}
-              onPress={() => setSelectedDifficulty('Easy')}
-            >
-              <Text style={[styles.smallChipText, selectedDifficulty === 'Easy' && styles.smallChipTextSelected]}>
-                Easy
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.smallChip, selectedDifficulty === 'Medium' && styles.smallChipSelected]}
-              onPress={() => setSelectedDifficulty('Medium')}
-            >
-              <Text style={[styles.smallChipText, selectedDifficulty === 'Medium' && styles.smallChipTextSelected]}>
-                Medium
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.smallChip, selectedDifficulty === 'Hard' && styles.smallChipSelected]}
-              onPress={() => setSelectedDifficulty('Hard')}
-            >
-              <Text style={[styles.smallChipText, selectedDifficulty === 'Hard' && styles.smallChipTextSelected]}>
-                Hard
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.lessonsHeader}>
-          <Text style={commonStyles.subtitle}>My Lessons</Text>
-          <Text style={commonStyles.textSecondary}>
-            {filteredLessons.length} {filteredLessons.length === 1 ? 'lesson' : 'lessons'}
-          </Text>
-        </View>
-
-        {filteredLessons.length === 0 ? (
+        {lessons.length === 0 ? (
           <View style={styles.emptyState}>
             <IconSymbol
-              ios_icon_name="book"
+              ios_icon_name="book.closed"
               android_material_icon_name="menu-book"
+              size={64}
+              color={colors.textSecondary}
+            />
+            <Text style={[commonStyles.text, styles.emptyText]}>
+              No lessons yet
+            </Text>
+            <Text style={[commonStyles.textSecondary, styles.emptySubtext]}>
+              Create your first lesson to get started with AI-powered learning
+            </Text>
+          </View>
+        ) : filteredLessons.length === 0 ? (
+          <View style={styles.emptyState}>
+            <IconSymbol
+              ios_icon_name="magnifyingglass"
+              android_material_icon_name="search"
               size={64}
               color={colors.textSecondary}
             />
             <Text style={[commonStyles.text, styles.emptyText]}>
               No lessons found
             </Text>
-            <Text style={commonStyles.textSecondary}>
-              Create your first lesson to get started
+            <Text style={[commonStyles.textSecondary, styles.emptySubtext]}>
+              Try a different search term
             </Text>
           </View>
         ) : (
@@ -232,12 +179,12 @@ export default function HomeScreen() {
             {filteredLessons.map((lesson, index) => (
               <React.Fragment key={index}>
                 <TouchableOpacity
-                  style={commonStyles.card}
+                  style={styles.lessonBox}
                   onPress={() => router.push(`/lesson/${lesson.id}`)}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.lessonHeader}>
-                    <View style={styles.lessonIcon}>
+                  <View style={styles.lessonBoxHeader}>
+                    <View style={styles.lessonBoxIcon}>
                       <IconSymbol
                         ios_icon_name="book.fill"
                         android_material_icon_name="menu-book"
@@ -245,62 +192,66 @@ export default function HomeScreen() {
                         color={colors.primary}
                       />
                     </View>
-                    <View style={styles.lessonInfo}>
-                      <Text style={styles.lessonTitle}>{lesson.title}</Text>
-                      <View style={styles.lessonMeta}>
-                        <View style={[commonStyles.badge, styles.levelBadge]}>
-                          <Text style={commonStyles.badgeText}>{lesson.level}</Text>
-                        </View>
-                        <View style={[commonStyles.badge, styles.difficultyBadge]}>
-                          <Text style={commonStyles.badgeText}>{lesson.difficulty}</Text>
-                        </View>
+                    <View style={styles.lessonBoxBadges}>
+                      <View style={[commonStyles.badge, styles.levelBadge]}>
+                        <Text style={styles.badgeText}>{lesson.level}</Text>
+                      </View>
+                      <View style={[commonStyles.badge, styles.difficultyBadge]}>
+                        <Text style={styles.badgeText}>{lesson.difficulty}</Text>
                       </View>
                     </View>
                   </View>
                   
-                  <View style={styles.progressContainer}>
-                    <View style={styles.progressBar}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          { width: `${lesson.progress}%` },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.progressText}>{lesson.progress}%</Text>
-                  </View>
+                  <Text style={styles.lessonBoxSubject}>{lesson.subject}</Text>
+                  <Text style={styles.lessonBoxTopic}>{lesson.topic}</Text>
+                  <Text style={styles.lessonBoxDescription} numberOfLines={2}>
+                    {lesson.description}
+                  </Text>
 
-                  <View style={styles.lessonStats}>
-                    <View style={styles.statItem}>
-                      <IconSymbol
-                        ios_icon_name="note.text"
-                        android_material_icon_name="description"
-                        size={16}
-                        color={colors.textSecondary}
-                      />
-                      <Text style={styles.statItemText}>Notes</Text>
+                  <View style={styles.lessonBoxFooter}>
+                    <View style={styles.lessonBoxStats}>
+                      <View style={styles.lessonBoxStat}>
+                        <IconSymbol
+                          ios_icon_name="note.text"
+                          android_material_icon_name="description"
+                          size={14}
+                          color={colors.textSecondary}
+                        />
+                        <Text style={styles.lessonBoxStatText}>Notes</Text>
+                      </View>
+                      <View style={styles.lessonBoxStat}>
+                        <IconSymbol
+                          ios_icon_name="rectangle.stack"
+                          android_material_icon_name="style"
+                          size={14}
+                          color={colors.textSecondary}
+                        />
+                        <Text style={styles.lessonBoxStatText}>
+                          {lesson.flashcards.length}
+                        </Text>
+                      </View>
+                      <View style={styles.lessonBoxStat}>
+                        <IconSymbol
+                          ios_icon_name="questionmark.circle"
+                          android_material_icon_name="help"
+                          size={14}
+                          color={colors.textSecondary}
+                        />
+                        <Text style={styles.lessonBoxStatText}>
+                          {lesson.examQuestions.length}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.statItem}>
-                      <IconSymbol
-                        ios_icon_name="rectangle.stack"
-                        android_material_icon_name="style"
-                        size={16}
-                        color={colors.textSecondary}
-                      />
-                      <Text style={styles.statItemText}>
-                        {lesson.flashcards.length} cards
-                      </Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <IconSymbol
-                        ios_icon_name="questionmark.circle"
-                        android_material_icon_name="help"
-                        size={16}
-                        color={colors.textSecondary}
-                      />
-                      <Text style={styles.statItemText}>
-                        {lesson.examQuestions.length} questions
-                      </Text>
+                    <View style={styles.progressIndicator}>
+                      <View style={styles.progressBar}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            { width: `${lesson.progress}%` },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.progressText}>{lesson.progress}%</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -309,41 +260,9 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/lesson/create')}
-        activeOpacity={0.8}
-      >
-        <IconSymbol
-          ios_icon_name="plus"
-          android_material_icon_name="add"
-          size={28}
-          color="#FFFFFF"
-        />
-      </TouchableOpacity>
     </View>
   );
 }
-
-const FilterChip = ({
-  label,
-  isSelected,
-  onPress,
-}: {
-  label: string;
-  isSelected: boolean;
-  onPress: () => void;
-}) => (
-  <TouchableOpacity
-    style={[styles.filterChip, isSelected && styles.filterChipSelected]}
-    onPress={onPress}
-  >
-    <Text style={[styles.filterChipText, isSelected && styles.filterChipTextSelected]}>
-      {label}
-    </Text>
-  </TouchableOpacity>
-);
 
 const styles = StyleSheet.create({
   scrollView: {
@@ -404,6 +323,42 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
+  createLessonButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    marginHorizontal: 20,
+    marginBottom: 24,
+    padding: 20,
+    borderRadius: 16,
+    gap: 16,
+    boxShadow: '0px 4px 12px rgba(116, 81, 235, 0.15)',
+    elevation: 4,
+    borderWidth: 2,
+    borderColor: colors.primary + '30',
+  },
+  createLessonIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  createLessonContent: {
+    flex: 1,
+  },
+  createLessonTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  createLessonSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -412,75 +367,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 20,
     gap: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: colors.text,
-  },
-  filterScroll: {
-    marginBottom: 12,
-  },
-  filterContainer: {
-    paddingHorizontal: 20,
-    gap: 8,
-  },
-  filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterChipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  filterChipTextSelected: {
-    color: '#FFFFFF',
-  },
-  levelDifficultyContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    gap: 12,
-  },
-  filterGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  filterLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  smallChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  smallChipSelected: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.secondary,
-  },
-  smallChipText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  smallChipTextSelected: {
-    color: '#FFFFFF',
   },
   lessonsHeader: {
     flexDirection: 'row',
@@ -499,36 +392,39 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
+    fontWeight: '600',
+  },
+  emptySubtext: {
+    textAlign: 'center',
   },
   lessonsList: {
     paddingHorizontal: 20,
+    gap: 16,
   },
-  lessonHeader: {
+  lessonBox: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 3,
+  },
+  lessonBoxHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-  lessonIcon: {
+  lessonBoxIcon: {
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: colors.secondary + '20',
+    backgroundColor: colors.primary + '15',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  lessonInfo: {
-    flex: 1,
-  },
-  lessonTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 6,
-  },
-  lessonMeta: {
+  lessonBoxBadges: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   levelBadge: {
     backgroundColor: colors.primary + '20',
@@ -536,10 +432,49 @@ const styles = StyleSheet.create({
   difficultyBadge: {
     backgroundColor: colors.accent + '20',
   },
-  progressContainer: {
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  lessonBoxSubject: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  lessonBoxTopic: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.primary,
+    marginBottom: 8,
+  },
+  lessonBoxDescription: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  lessonBoxFooter: {
+    gap: 12,
+  },
+  lessonBoxStats: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  lessonBoxStat: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    gap: 4,
+  },
+  lessonBoxStatText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  progressIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   progressBar: {
@@ -559,31 +494,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textSecondary,
     minWidth: 35,
-  },
-  lessonStats: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statItemText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 100,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0px 4px 12px rgba(116, 81, 235, 0.4)',
-    elevation: 8,
   },
 });

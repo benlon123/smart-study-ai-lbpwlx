@@ -182,6 +182,18 @@ export default function LessonDetailScreen() {
                 </View>
               )}
 
+              {question.hint && (
+                <View style={styles.hintContainer}>
+                  <IconSymbol
+                    ios_icon_name="lightbulb.fill"
+                    android_material_icon_name="lightbulb"
+                    size={16}
+                    color={colors.highlight}
+                  />
+                  <Text style={styles.hintText}>{question.hint}</Text>
+                </View>
+              )}
+
               <View style={styles.explanationContainer}>
                 <Text style={styles.explanationLabel}>Explanation:</Text>
                 <Text style={styles.explanationText}>{question.explanation}</Text>
@@ -230,7 +242,7 @@ export default function LessonDetailScreen() {
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            {lesson.title}
+            {lesson.name}
           </Text>
           <View style={styles.headerBadges}>
             <View style={styles.headerBadge}>
@@ -546,6 +558,22 @@ const styles = StyleSheet.create({
   },
   optionTextCorrect: {
     fontWeight: '600',
+  },
+  hintContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: colors.highlight + '10',
+    marginBottom: 12,
+    gap: 8,
+  },
+  hintText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.text,
+    fontStyle: 'italic',
   },
   explanationContainer: {
     padding: 12,

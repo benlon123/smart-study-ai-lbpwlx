@@ -5,7 +5,13 @@ import { generateMockLesson, sampleLessons } from '@/utils/mockData';
 
 interface LessonContextType {
   lessons: Lesson[];
-  createLesson: (subject: Subject, level: Level, difficulty: Difficulty) => Promise<Lesson>;
+  createLesson: (
+    name: string,
+    subject: Subject,
+    topic: string,
+    level: Level,
+    difficulty: Difficulty
+  ) => Promise<Lesson>;
   deleteLesson: (lessonId: string) => void;
   updateLessonProgress: (lessonId: string, progress: number) => void;
   getLessonById: (lessonId: string) => Lesson | undefined;
@@ -25,15 +31,17 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [lessons, setLessons] = useState<Lesson[]>(sampleLessons);
 
   const createLesson = async (
+    name: string,
     subject: Subject,
+    topic: string,
     level: Level,
     difficulty: Difficulty
   ): Promise<Lesson> => {
     try {
       // Simulate AI generation delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
-      const newLesson = generateMockLesson(subject, level, difficulty);
+      const newLesson = generateMockLesson(name, subject, topic, level, difficulty);
       setLessons(prev => [newLesson, ...prev]);
       
       console.log('Lesson created:', newLesson);
