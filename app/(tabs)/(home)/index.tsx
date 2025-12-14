@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +19,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 export default function HomeScreen() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
-  const { lessons } = useLesson();
+  const { lessons, canCreateLesson, remainingLessons } = useLesson();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredLessons = lessons.filter(lesson => {
@@ -29,6 +30,21 @@ export default function HomeScreen() {
     
     return matchesSearch;
   });
+
+  const handleCreateLesson = () => {
+    if (!canCreateLesson()) {
+      Alert.alert(
+        'Lesson Limit Reached',
+        'Free users are limited to 5 lessons. Upgrade to Premium for unlimited lessons and access to all features!',
+        [
+          { text: 'Maybe Later', style: 'cancel' },
+          { text: 'Learn More', onPress: () => router.push('/(tabs)/info') },
+        ]
+      );
+      return;
+    }
+    router.push('/lesson/create');
+  };
 
   if (!isAuthenticated) {
     return (
@@ -90,9 +106,67 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Lesson Limit Banner */}
+        {!user?.isPremium && (
+          <TouchableOpacity
+            style={styles.limitBanner}
+            onPress={() => router.push('/(tabs)/info')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.limitBannerContent}>
+              <View style={styles.limitBannerIcon}>
+                <IconSymbol
+                  ios_icon_name={remainingLessons > 0 ? 'info.circle.fill' : 'exclamationmark.triangle.fill'}
+                  android_material_icon_name={remainingLessons > 0 ? 'info' : 'warning'}
+                  size={24}
+                  color={remainingLessons > 0 ? colors.primary : colors.warning}
+                />
+              </View>
+              <View style={styles.limitBannerText}>
+                <Text style={styles.limitBannerTitle}>
+                  {remainingLessons > 0 
+                    ? `${remainingLessons} lesson${remainingLessons !== 1 ? 's' : ''} remaining` 
+                    : 'Lesson limit reached'}
+                </Text>
+                <Text style={styles.limitBannerSubtitle}>
+                  {remainingLessons > 0
+                    ? 'Upgrade to Premium for unlimited lessons'
+                    : 'Upgrade to Premium to create more lessons'}
+                </Text>
+              </View>
+              <IconSymbol
+                ios_icon_name="chevron.right"
+                android_material_icon_name="chevron-right"
+                size={20}
+                color={colors.textSecondary}
+              />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {user?.isPremium && (
+          <View style={styles.premiumBanner}>
+            <View style={styles.premiumBannerContent}>
+              <IconSymbol
+                ios_icon_name="crown.fill"
+                android_material_icon_name="workspace-premium"
+                size={24}
+                color="#FFD700"
+              />
+              <View style={styles.premiumBannerText}>
+                <Text style={styles.premiumBannerTitle}>Premium Member</Text>
+                <Text style={styles.premiumBannerSubtitle}>Unlimited lessons & all features unlocked</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         <TouchableOpacity
-          style={styles.createLessonButton}
-          onPress={() => router.push('/lesson/create')}
+          style={[
+            styles.createLessonButton,
+            !canCreateLesson() && styles.createLessonButtonDisabled
+          ]}
+          onPress={handleCreateLesson}
           activeOpacity={0.8}
         >
           <View style={styles.createLessonIcon}>
@@ -100,13 +174,20 @@ export default function HomeScreen() {
               ios_icon_name="plus.circle.fill"
               android_material_icon_name="add-circle"
               size={32}
-              color={colors.primary}
+              color={canCreateLesson() ? colors.primary : colors.textSecondary}
             />
           </View>
           <View style={styles.createLessonContent}>
-            <Text style={styles.createLessonTitle}>Create New Lesson</Text>
+            <Text style={[
+              styles.createLessonTitle,
+              !canCreateLesson() && styles.createLessonTitleDisabled
+            ]}>
+              Create New Lesson
+            </Text>
             <Text style={styles.createLessonSubtitle}>
-              AI-powered lessons with notes, flashcards & quizzes
+              {canCreateLesson()
+                ? 'AI-powered lessons with notes, flashcards & quizzes'
+                : 'Upgrade to Premium to create more lessons'}
             </Text>
           </View>
           <IconSymbol
@@ -158,6 +239,11 @@ export default function HomeScreen() {
             <Text style={[commonStyles.textSecondary, styles.emptySubtext]}>
               Create your first lesson to get started with AI-powered learning
             </Text>
+            {!user?.isPremium && (
+              <Text style={[commonStyles.textSecondary, styles.emptySubtext, { marginTop: 8 }]}>
+                Free users can create up to 5 lessons
+              </Text>
+            )}
           </View>
         ) : filteredLessons.length === 0 ? (
           <View style={styles.emptyState}>
@@ -323,6 +409,70 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
+  limitBanner: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.primary + '30',
+    overflow: 'hidden',
+  },
+  limitBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  limitBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  limitBannerText: {
+    flex: 1,
+  },
+  limitBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  limitBannerSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  premiumBanner: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: '#FFD70020',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FFD70050',
+    overflow: 'hidden',
+  },
+  premiumBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  premiumBannerText: {
+    flex: 1,
+  },
+  premiumBannerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  premiumBannerSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
   createLessonButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -336,6 +486,10 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 2,
     borderColor: colors.primary + '30',
+  },
+  createLessonButtonDisabled: {
+    opacity: 0.6,
+    borderColor: colors.border,
   },
   createLessonIcon: {
     width: 56,
@@ -353,6 +507,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     marginBottom: 4,
+  },
+  createLessonTitleDisabled: {
+    color: colors.textSecondary,
   },
   createLessonSubtitle: {
     fontSize: 13,

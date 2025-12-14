@@ -4,6 +4,7 @@ import { Platform, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, PremiumGrant } from '@/types/lesson';
 
 interface AuthContextType {
@@ -35,8 +36,78 @@ export const useAuth = () => {
   return context;
 };
 
-// Mock user database
-const mockUsers: User[] = [];
+// Storage keys
+const USERS_STORAGE_KEY = '@smartstudy_users';
+const CURRENT_USER_KEY = '@smartstudy_current_user';
+
+// Helper function to load users from storage
+const loadUsersFromStorage = async (): Promise<User[]> => {
+  try {
+    const usersJson = await AsyncStorage.getItem(USERS_STORAGE_KEY);
+    if (usersJson) {
+      const users = JSON.parse(usersJson);
+      // Convert date strings back to Date objects
+      return users.map((user: any) => ({
+        ...user,
+        lastLoginDate: user.lastLoginDate ? new Date(user.lastLoginDate) : undefined,
+        signupDate: new Date(user.signupDate),
+        premiumGrant: user.premiumGrant ? {
+          ...user.premiumGrant,
+          grantedAt: new Date(user.premiumGrant.grantedAt),
+          expiresAt: user.premiumGrant.expiresAt ? new Date(user.premiumGrant.expiresAt) : undefined,
+        } : undefined,
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.error('Error loading users from storage:', error);
+    return [];
+  }
+};
+
+// Helper function to save users to storage
+const saveUsersToStorage = async (users: User[]): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+    console.log('Users saved to storage');
+  } catch (error) {
+    console.error('Error saving users to storage:', error);
+  }
+};
+
+// Helper function to save current user
+const saveCurrentUser = async (user: User): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+    console.log('Current user saved');
+  } catch (error) {
+    console.error('Error saving current user:', error);
+  }
+};
+
+// Helper function to load current user
+const loadCurrentUser = async (): Promise<User | null> => {
+  try {
+    const userJson = await AsyncStorage.getItem(CURRENT_USER_KEY);
+    if (userJson) {
+      const user = JSON.parse(userJson);
+      return {
+        ...user,
+        lastLoginDate: user.lastLoginDate ? new Date(user.lastLoginDate) : undefined,
+        signupDate: new Date(user.signupDate),
+        premiumGrant: user.premiumGrant ? {
+          ...user.premiumGrant,
+          grantedAt: new Date(user.premiumGrant.grantedAt),
+          expiresAt: user.premiumGrant.expiresAt ? new Date(user.premiumGrant.expiresAt) : undefined,
+        } : undefined,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error loading current user:', error);
+    return null;
+  }
+};
 
 // Helper function to check if two dates are consecutive days
 const areConsecutiveDays = (date1: Date, date2: Date): boolean => {
@@ -59,10 +130,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    checkSession();
-    checkBiometricAvailability();
+    initializeAuth();
   }, []);
 
   // Update streak when user logs in
@@ -71,6 +142,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateStreak();
     }
   }, [user?.id]);
+
+  const initializeAuth = async () => {
+    try {
+      // Load all users from storage
+      const users = await loadUsersFromStorage();
+      setAllUsers(users);
+      
+      // Check biometric availability
+      await checkBiometricAvailability();
+      
+      // Check for saved credentials
+      const savedEmail = await SecureStore.getItemAsync('saved_email');
+      const savedPassword = await SecureStore.getItemAsync('saved_password');
+      
+      if (savedEmail && savedPassword) {
+        // Auto sign in with saved credentials
+        await signIn(savedEmail, savedPassword, false);
+      } else {
+        // Try to load last logged in user
+        const lastUser = await loadCurrentUser();
+        if (lastUser) {
+          setUser(lastUser);
+        }
+      }
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error initializing auth:', error);
+      setIsLoading(false);
+    }
+  };
 
   const checkBiometricAvailability = async () => {
     try {
@@ -83,24 +185,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setBiometricEnabled(biometricEnabledStr === 'true');
     } catch (error) {
       console.error('Error checking biometric availability:', error);
-    }
-  };
-
-  const checkSession = async () => {
-    try {
-      // Check for saved credentials
-      const savedEmail = await SecureStore.getItemAsync('saved_email');
-      const savedPassword = await SecureStore.getItemAsync('saved_password');
-      
-      if (savedEmail && savedPassword) {
-        // Auto sign in with saved credentials
-        await signIn(savedEmail, savedPassword, false);
-      }
-      
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error checking session:', error);
-      setIsLoading(false);
     }
   };
 
@@ -154,16 +238,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateUserInDatabase = (updatedUser: User) => {
-    const userIndex = mockUsers.findIndex(u => u.id === updatedUser.id);
+  const updateUserInDatabase = async (updatedUser: User) => {
+    const userIndex = allUsers.findIndex(u => u.id === updatedUser.id);
     if (userIndex !== -1) {
-      mockUsers[userIndex] = updatedUser;
+      const newUsers = [...allUsers];
+      newUsers[userIndex] = updatedUser;
+      setAllUsers(newUsers);
+      await saveUsersToStorage(newUsers);
+      await saveCurrentUser(updatedUser);
     }
   };
 
   const signUp = async (name: string, email: string, password: string) => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if email already exists
+      const existingUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (existingUser) {
+        throw new Error('EMAIL_EXISTS');
+      }
       
       const newUser: User = {
         id: `user-${Date.now()}`,
@@ -211,8 +305,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signupDate: new Date(),
       };
       
-      mockUsers.push(newUser);
+      const newUsers = [...allUsers, newUser];
+      setAllUsers(newUsers);
+      await saveUsersToStorage(newUsers);
+      
       setUser(newUser);
+      await saveCurrentUser(newUser);
       
       // Save credentials securely
       await SecureStore.setItemAsync('saved_email', email);
@@ -221,6 +319,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('User signed up:', newUser);
     } catch (error) {
       console.error('Sign up error:', error);
+      if (error instanceof Error && error.message === 'EMAIL_EXISTS') {
+        throw new Error('This email is already registered. Please sign in instead.');
+      }
       throw new Error('Failed to sign up. Please try again.');
     }
   };
@@ -229,7 +330,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      let existingUser = mockUsers.find(u => u.email === email);
+      let existingUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       
       if (!existingUser) {
         existingUser = {
@@ -277,10 +378,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
           signupDate: new Date(),
         };
-        mockUsers.push(existingUser);
+        const newUsers = [...allUsers, existingUser];
+        setAllUsers(newUsers);
+        await saveUsersToStorage(newUsers);
       }
       
       setUser(existingUser);
+      await saveCurrentUser(existingUser);
       
       // Save credentials if remember me is enabled
       if (rememberMe) {
@@ -354,7 +458,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ? `${credential.fullName.givenName || ''} ${credential.fullName.familyName || ''}`.trim()
         : 'Apple User';
 
-      let existingUser = mockUsers.find(u => u.email === email);
+      let existingUser = allUsers.find(u => u.email === email);
       
       if (!existingUser) {
         existingUser = {
@@ -402,10 +506,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           },
           signupDate: new Date(),
         };
-        mockUsers.push(existingUser);
+        const newUsers = [...allUsers, existingUser];
+        setAllUsers(newUsers);
+        await saveUsersToStorage(newUsers);
       }
       
       setUser(existingUser);
+      await saveCurrentUser(existingUser);
       
       // Save Apple ID credential
       await SecureStore.setItemAsync('apple_user_id', credential.user);
@@ -461,6 +568,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Keep user data in storage but clear current session
+      await AsyncStorage.removeItem(CURRENT_USER_KEY);
       setUser(null);
       
       // Clear saved credentials if biometric is not enabled
@@ -524,27 +634,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 // Export function to get all users (for admin)
-export const getAllUsers = (): User[] => {
-  return mockUsers;
+export const getAllUsers = async (): Promise<User[]> => {
+  return await loadUsersFromStorage();
 };
 
 // Export function to find user by email or name
-export const findUserByEmailOrName = (searchTerm: string): User | undefined => {
-  return mockUsers.find(u => 
+export const findUserByEmailOrName = async (searchTerm: string): Promise<User | undefined> => {
+  const users = await loadUsersFromStorage();
+  return users.find(u => 
     u.email.toLowerCase() === searchTerm.toLowerCase() || 
     u.name.toLowerCase() === searchTerm.toLowerCase()
   );
 };
 
 // Export function to grant premium
-export const grantPremiumToUser = (
+export const grantPremiumToUser = async (
   userId: string, 
   grantedBy: string, 
   isPermanent: boolean, 
   expiresAt?: Date,
   reason?: string
-): boolean => {
-  const userIndex = mockUsers.findIndex(u => u.id === userId);
+): Promise<boolean> => {
+  const users = await loadUsersFromStorage();
+  const userIndex = users.findIndex(u => u.id === userId);
   if (userIndex !== -1) {
     const grant: PremiumGrant = {
       id: `grant-${Date.now()}`,
@@ -556,21 +668,24 @@ export const grantPremiumToUser = (
       reason,
     };
     
-    mockUsers[userIndex].isPremium = true;
-    mockUsers[userIndex].premiumGrant = grant;
-    console.log('Premium granted to user:', mockUsers[userIndex]);
+    users[userIndex].isPremium = true;
+    users[userIndex].premiumGrant = grant;
+    await saveUsersToStorage(users);
+    console.log('Premium granted to user:', users[userIndex]);
     return true;
   }
   return false;
 };
 
 // Export function to revoke premium
-export const revokePremiumFromUser = (userId: string): boolean => {
-  const userIndex = mockUsers.findIndex(u => u.id === userId);
+export const revokePremiumFromUser = async (userId: string): Promise<boolean> => {
+  const users = await loadUsersFromStorage();
+  const userIndex = users.findIndex(u => u.id === userId);
   if (userIndex !== -1) {
-    mockUsers[userIndex].isPremium = false;
-    mockUsers[userIndex].premiumGrant = undefined;
-    console.log('Premium revoked from user:', mockUsers[userIndex]);
+    users[userIndex].isPremium = false;
+    users[userIndex].premiumGrant = undefined;
+    await saveUsersToStorage(users);
+    console.log('Premium revoked from user:', users[userIndex]);
     return true;
   }
   return false;

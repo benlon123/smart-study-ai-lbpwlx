@@ -27,6 +27,12 @@ export default function TabLayout() {
       label: 'Analytics',
     },
     {
+      name: 'info',
+      route: '/(tabs)/info',
+      icon: 'info',
+      label: 'Info',
+    },
+    {
       name: 'settings',
       route: '/(tabs)/settings',
       icon: 'settings',
@@ -45,6 +51,7 @@ export default function TabLayout() {
         <Stack.Screen key="home" name="(home)" />
         <Stack.Screen key="tasks" name="tasks" />
         <Stack.Screen key="analytics" name="analytics" />
+        <Stack.Screen key="info" name="info" />
         <Stack.Screen key="settings" name="settings" />
       </Stack>
       {isAuthenticated && <FloatingTabBar tabs={tabs} />}

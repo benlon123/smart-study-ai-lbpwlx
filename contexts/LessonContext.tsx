@@ -1,14 +1,15 @@
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Lesson, Subject, Level, Difficulty } from '@/types/lesson';
 import { 
   generateMockLesson, 
-  sampleLessons, 
   generateMockFlashcards, 
   generateMockExamQuestions,
   generateMockQuiz,
   generateMockNotes
 } from '@/utils/mockData';
+import { useAuth } from './AuthContext';
 
 interface LessonContextType {
   lessons: Lesson[];
@@ -27,6 +28,8 @@ interface LessonContextType {
   deleteLesson: (lessonId: string) => void;
   updateLessonProgress: (lessonId: string, progress: number) => void;
   getLessonById: (lessonId: string) => Lesson | undefined;
+  canCreateLesson: () => boolean;
+  remainingLessons: number;
 }
 
 const LessonContext = createContext<LessonContextType | undefined>(undefined);
@@ -39,8 +42,74 @@ export const useLesson = () => {
   return context;
 };
 
+const LESSONS_STORAGE_KEY = '@smartstudy_lessons';
+const FREE_USER_LESSON_LIMIT = 5;
+
 export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [lessons, setLessons] = useState<Lesson[]>(sampleLessons);
+  const { user } = useAuth();
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+
+  // Load lessons from storage when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      loadLessons();
+    } else {
+      setLessons([]);
+    }
+  }, [user?.id]);
+
+  // Save lessons to storage whenever they change
+  useEffect(() => {
+    if (user && lessons.length > 0) {
+      saveLessons();
+    }
+  }, [lessons, user?.id]);
+
+  const loadLessons = async () => {
+    try {
+      const lessonsJson = await AsyncStorage.getItem(`${LESSONS_STORAGE_KEY}_${user?.id}`);
+      if (lessonsJson) {
+        const loadedLessons = JSON.parse(lessonsJson);
+        // Convert date strings back to Date objects
+        const parsedLessons = loadedLessons.map((lesson: any) => ({
+          ...lesson,
+          createdAt: new Date(lesson.createdAt),
+          flashcards: lesson.flashcards.map((fc: any) => ({
+            ...fc,
+            lastReviewed: fc.lastReviewed ? new Date(fc.lastReviewed) : undefined,
+            nextReview: fc.nextReview ? new Date(fc.nextReview) : undefined,
+          })),
+          quiz: lesson.quiz ? {
+            ...lesson.quiz,
+            completedAt: lesson.quiz.completedAt ? new Date(lesson.quiz.completedAt) : undefined,
+          } : undefined,
+        }));
+        setLessons(parsedLessons);
+        console.log(`Loaded ${parsedLessons.length} lessons for user ${user?.id}`);
+      }
+    } catch (error) {
+      console.error('Error loading lessons:', error);
+    }
+  };
+
+  const saveLessons = async () => {
+    try {
+      await AsyncStorage.setItem(`${LESSONS_STORAGE_KEY}_${user?.id}`, JSON.stringify(lessons));
+      console.log(`Saved ${lessons.length} lessons for user ${user?.id}`);
+    } catch (error) {
+      console.error('Error saving lessons:', error);
+    }
+  };
+
+  const canCreateLesson = (): boolean => {
+    if (!user) return false;
+    if (user.isPremium) return true;
+    return lessons.length < FREE_USER_LESSON_LIMIT;
+  };
+
+  const remainingLessons = user?.isPremium 
+    ? -1 // -1 indicates unlimited
+    : Math.max(0, FREE_USER_LESSON_LIMIT - lessons.length);
 
   const createLesson = async (
     name: string,
@@ -52,6 +121,10 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     selectedQuotes?: string[]
   ): Promise<Lesson> => {
     try {
+      if (!canCreateLesson()) {
+        throw new Error(`Free users are limited to ${FREE_USER_LESSON_LIMIT} lessons. Upgrade to Premium for unlimited lessons!`);
+      }
+
       console.log('Creating lesson container only (no content)...');
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -62,7 +135,7 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return newLesson;
     } catch (error) {
       console.error('Error creating lesson:', error);
-      throw new Error('Failed to create lesson. Please try again.');
+      throw error;
     }
   };
 
@@ -107,6 +180,10 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const generateFlashcards = async (lessonId: string, count: 10 | 20 | 30): Promise<void> => {
     try {
+      if (!user?.isPremium) {
+        throw new Error('Flashcards are a Premium feature. Upgrade to Premium to access smart flashcards!');
+      }
+
       console.log('Generating', count, 'flashcards for lesson:', lessonId);
       
       const lesson = lessons.find(l => l.id === lessonId);
@@ -199,6 +276,8 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         deleteLesson,
         updateLessonProgress,
         getLessonById,
+        canCreateLesson,
+        remainingLessons,
       }}
     >
       {children}

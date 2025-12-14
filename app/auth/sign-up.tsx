@@ -60,7 +60,26 @@ export default function SignUpScreen() {
       }, 500);
     } catch (error) {
       console.error('Sign up error:', error);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign up');
+      
+      // Check if error is about existing email
+      if (error instanceof Error && error.message.includes('already registered')) {
+        Alert.alert(
+          'Email Already Registered',
+          'This email is already registered. Would you like to sign in instead?',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Sign In',
+              onPress: () => router.replace('/auth/sign-in'),
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign up');
+      }
     } finally {
       setIsLoading(false);
     }
