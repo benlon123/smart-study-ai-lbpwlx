@@ -8,10 +8,11 @@ import {
   ScrollView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useLesson } from '@/contexts/LessonContext';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
 type TabType = 'notes' | 'flashcards' | 'questions' | 'quiz';
@@ -19,10 +20,11 @@ type TabType = 'notes' | 'flashcards' | 'questions' | 'quiz';
 export default function LessonDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { getLessonById } = useLesson();
+  const { getLessonById, generateRemainingContent } = useLesson();
   const [activeTab, setActiveTab] = useState<TabType>('notes');
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const lesson = getLessonById(id as string);
 
@@ -37,7 +39,24 @@ export default function LessonDetailScreen() {
     );
   }
 
+  const hasRemainingContent = lesson.flashcards.length > 0 || lesson.examQuestions.length > 0 || lesson.quiz;
   const currentFlashcard = lesson.flashcards[currentFlashcardIndex];
+
+  const handleGenerateContent = async () => {
+    setIsGenerating(true);
+    try {
+      await generateRemainingContent(lesson.id);
+      Alert.alert(
+        'Content Generated! 🎉',
+        'Flashcards, exam questions, and quiz have been created successfully.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to generate content');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleNextFlashcard = () => {
     if (currentFlashcardIndex < lesson.flashcards.length - 1) {
@@ -53,181 +72,334 @@ export default function LessonDetailScreen() {
     }
   };
 
+  const renderGenerateContentBanner = () => (
+    <View style={styles.generateBanner}>
+      <View style={styles.generateBannerContent}>
+        <IconSymbol
+          ios_icon_name="sparkles"
+          android_material_icon_name="auto-awesome"
+          size={32}
+          color={colors.primary}
+        />
+        <View style={styles.generateBannerText}>
+          <Text style={styles.generateBannerTitle}>Ready for More?</Text>
+          <Text style={styles.generateBannerDescription}>
+            Generate flashcards, exam questions, and quizzes to enhance your learning
+          </Text>
+        </View>
+      </View>
+      <TouchableOpacity
+        style={[buttonStyles.primary, styles.generateButton]}
+        onPress={handleGenerateContent}
+        disabled={isGenerating}
+      >
+        {isGenerating ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : (
+          <>
+            <IconSymbol
+              ios_icon_name="sparkles"
+              android_material_icon_name="auto-awesome"
+              size={18}
+              color="#FFFFFF"
+            />
+            <Text style={buttonStyles.textWhite}>Generate Content</Text>
+          </>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+
   const renderNotes = () => (
     <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+      {!hasRemainingContent && renderGenerateContentBanner()}
       <View style={styles.notesContainer}>
         <Text style={styles.notesText}>{lesson.notes}</Text>
       </View>
     </ScrollView>
   );
 
-  const renderFlashcards = () => (
-    <View style={styles.tabContent}>
-      <View style={styles.flashcardContainer}>
-        <View style={styles.flashcardCounter}>
-          <Text style={styles.flashcardCounterText}>
-            {currentFlashcardIndex + 1} / {lesson.flashcards.length}
+  const renderFlashcards = () => {
+    if (lesson.flashcards.length === 0) {
+      return (
+        <View style={[styles.tabContent, styles.emptyStateContainer]}>
+          <IconSymbol
+            ios_icon_name="rectangle.stack"
+            android_material_icon_name="style"
+            size={64}
+            color={colors.textSecondary}
+          />
+          <Text style={styles.emptyStateTitle}>No Flashcards Yet</Text>
+          <Text style={styles.emptyStateDescription}>
+            Generate flashcards to start practicing with spaced repetition
           </Text>
+          <TouchableOpacity
+            style={[buttonStyles.primary, styles.generateContentButton]}
+            onPress={handleGenerateContent}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <IconSymbol
+                  ios_icon_name="sparkles"
+                  android_material_icon_name="auto-awesome"
+                  size={18}
+                  color="#FFFFFF"
+                />
+                <Text style={buttonStyles.textWhite}>Generate Flashcards</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
+      );
+    }
 
-        <TouchableOpacity
-          style={styles.flashcard}
-          onPress={() => setIsFlipped(!isFlipped)}
-          activeOpacity={0.9}
-        >
-          <View style={styles.flashcardContent}>
-            <Text style={styles.flashcardLabel}>
-              {isFlipped ? 'Answer' : 'Question'}
-            </Text>
-            <Text style={styles.flashcardText}>
-              {isFlipped ? currentFlashcard.answer : currentFlashcard.question}
+    return (
+      <View style={styles.tabContent}>
+        <View style={styles.flashcardContainer}>
+          <View style={styles.flashcardCounter}>
+            <Text style={styles.flashcardCounterText}>
+              {currentFlashcardIndex + 1} / {lesson.flashcards.length}
             </Text>
           </View>
-          <View style={styles.flashcardHint}>
-            <IconSymbol
-              ios_icon_name="hand.tap"
-              android_material_icon_name="touch-app"
-              size={16}
-              color={colors.textSecondary}
-            />
-            <Text style={styles.flashcardHintText}>Tap to flip</Text>
+
+          <TouchableOpacity
+            style={styles.flashcard}
+            onPress={() => setIsFlipped(!isFlipped)}
+            activeOpacity={0.9}
+          >
+            <View style={styles.flashcardContent}>
+              <Text style={styles.flashcardLabel}>
+                {isFlipped ? 'Answer' : 'Question'}
+              </Text>
+              <Text style={styles.flashcardText}>
+                {isFlipped ? currentFlashcard.answer : currentFlashcard.question}
+              </Text>
+            </View>
+            <View style={styles.flashcardHint}>
+              <IconSymbol
+                ios_icon_name="hand.tap"
+                android_material_icon_name="touch-app"
+                size={16}
+                color={colors.textSecondary}
+              />
+              <Text style={styles.flashcardHintText}>Tap to flip</Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.flashcardControls}>
+            <TouchableOpacity
+              style={[
+                styles.flashcardButton,
+                currentFlashcardIndex === 0 && styles.flashcardButtonDisabled,
+              ]}
+              onPress={handlePreviousFlashcard}
+              disabled={currentFlashcardIndex === 0}
+            >
+              <IconSymbol
+                ios_icon_name="chevron.left"
+                android_material_icon_name="chevron-left"
+                size={24}
+                color={currentFlashcardIndex === 0 ? colors.textSecondary : colors.primary}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.flashcardButton,
+                currentFlashcardIndex === lesson.flashcards.length - 1 &&
+                  styles.flashcardButtonDisabled,
+              ]}
+              onPress={handleNextFlashcard}
+              disabled={currentFlashcardIndex === lesson.flashcards.length - 1}
+            >
+              <IconSymbol
+                ios_icon_name="chevron.right"
+                android_material_icon_name="chevron-right"
+                size={24}
+                color={
+                  currentFlashcardIndex === lesson.flashcards.length - 1
+                    ? colors.textSecondary
+                    : colors.primary
+                }
+              />
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-
-        <View style={styles.flashcardControls}>
-          <TouchableOpacity
-            style={[
-              styles.flashcardButton,
-              currentFlashcardIndex === 0 && styles.flashcardButtonDisabled,
-            ]}
-            onPress={handlePreviousFlashcard}
-            disabled={currentFlashcardIndex === 0}
-          >
-            <IconSymbol
-              ios_icon_name="chevron.left"
-              android_material_icon_name="chevron-left"
-              size={24}
-              color={currentFlashcardIndex === 0 ? colors.textSecondary : colors.primary}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.flashcardButton,
-              currentFlashcardIndex === lesson.flashcards.length - 1 &&
-                styles.flashcardButtonDisabled,
-            ]}
-            onPress={handleNextFlashcard}
-            disabled={currentFlashcardIndex === lesson.flashcards.length - 1}
-          >
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={24}
-              color={
-                currentFlashcardIndex === lesson.flashcards.length - 1
-                  ? colors.textSecondary
-                  : colors.primary
-              }
-            />
-          </TouchableOpacity>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
-  const renderQuestions = () => (
-    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-      <View style={styles.questionsContainer}>
-        {lesson.examQuestions.map((question, index) => (
-          <React.Fragment key={index}>
-            <View style={styles.questionCard}>
-              <View style={styles.questionHeader}>
-                <Text style={styles.questionNumber}>Question {index + 1}</Text>
-                <View style={styles.marksBadge}>
-                  <Text style={styles.marksText}>{question.marks} marks</Text>
+  const renderQuestions = () => {
+    if (lesson.examQuestions.length === 0) {
+      return (
+        <View style={[styles.tabContent, styles.emptyStateContainer]}>
+          <IconSymbol
+            ios_icon_name="questionmark.circle"
+            android_material_icon_name="help"
+            size={64}
+            color={colors.textSecondary}
+          />
+          <Text style={styles.emptyStateTitle}>No Questions Yet</Text>
+          <Text style={styles.emptyStateDescription}>
+            Generate exam-style questions to test your understanding
+          </Text>
+          <TouchableOpacity
+            style={[buttonStyles.primary, styles.generateContentButton]}
+            onPress={handleGenerateContent}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <IconSymbol
+                  ios_icon_name="sparkles"
+                  android_material_icon_name="auto-awesome"
+                  size={18}
+                  color="#FFFFFF"
+                />
+                <Text style={buttonStyles.textWhite}>Generate Questions</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.questionsContainer}>
+          {lesson.examQuestions.map((question, index) => (
+            <React.Fragment key={index}>
+              <View style={styles.questionCard}>
+                <View style={styles.questionHeader}>
+                  <Text style={styles.questionNumber}>Question {index + 1}</Text>
+                  <View style={styles.marksBadge}>
+                    <Text style={styles.marksText}>{question.marks} marks</Text>
+                  </View>
                 </View>
-              </View>
-              <Text style={styles.questionText}>{question.question}</Text>
-              
-              {question.type === 'multiple-choice' && question.options && (
-                <View style={styles.optionsContainer}>
-                  {question.options.map((option, optionIndex) => (
-                    <React.Fragment key={optionIndex}>
-                      <View
-                        style={[
-                          styles.optionItem,
-                          option === question.correctAnswer && styles.optionItemCorrect,
-                        ]}
-                      >
-                        <Text
+                <Text style={styles.questionText}>{question.question}</Text>
+                
+                {question.type === 'multiple-choice' && question.options && (
+                  <View style={styles.optionsContainer}>
+                    {question.options.map((option, optionIndex) => (
+                      <React.Fragment key={optionIndex}>
+                        <View
                           style={[
-                            styles.optionText,
-                            option === question.correctAnswer && styles.optionTextCorrect,
+                            styles.optionItem,
+                            option === question.correctAnswer && styles.optionItemCorrect,
                           ]}
                         >
-                          {option}
-                        </Text>
-                        {option === question.correctAnswer && (
-                          <IconSymbol
-                            ios_icon_name="checkmark.circle.fill"
-                            android_material_icon_name="check-circle"
-                            size={20}
-                            color={colors.success}
-                          />
-                        )}
-                      </View>
-                    </React.Fragment>
-                  ))}
-                </View>
-              )}
+                          <Text
+                            style={[
+                              styles.optionText,
+                              option === question.correctAnswer && styles.optionTextCorrect,
+                            ]}
+                          >
+                            {option}
+                          </Text>
+                          {option === question.correctAnswer && (
+                            <IconSymbol
+                              ios_icon_name="checkmark.circle.fill"
+                              android_material_icon_name="check-circle"
+                              size={20}
+                              color={colors.success}
+                            />
+                          )}
+                        </View>
+                      </React.Fragment>
+                    ))}
+                  </View>
+                )}
 
-              {question.hint && (
-                <View style={styles.hintContainer}>
-                  <IconSymbol
-                    ios_icon_name="lightbulb.fill"
-                    android_material_icon_name="lightbulb"
-                    size={16}
-                    color={colors.highlight}
-                  />
-                  <Text style={styles.hintText}>{question.hint}</Text>
-                </View>
-              )}
+                {question.hint && (
+                  <View style={styles.hintContainer}>
+                    <IconSymbol
+                      ios_icon_name="lightbulb.fill"
+                      android_material_icon_name="lightbulb"
+                      size={16}
+                      color={colors.highlight}
+                    />
+                    <Text style={styles.hintText}>{question.hint}</Text>
+                  </View>
+                )}
 
-              <View style={styles.explanationContainer}>
-                <Text style={styles.explanationLabel}>Explanation:</Text>
-                <Text style={styles.explanationText}>{question.explanation}</Text>
+                <View style={styles.explanationContainer}>
+                  <Text style={styles.explanationLabel}>Explanation:</Text>
+                  <Text style={styles.explanationText}>{question.explanation}</Text>
+                </View>
               </View>
-            </View>
-          </React.Fragment>
-        ))}
-      </View>
-    </ScrollView>
-  );
+            </React.Fragment>
+          ))}
+        </View>
+      </ScrollView>
+    );
+  };
 
-  const renderQuiz = () => (
-    <View style={[styles.tabContent, commonStyles.centerContent]}>
-      <IconSymbol
-        ios_icon_name="checkmark.circle"
-        android_material_icon_name="check-circle"
-        size={64}
-        color={colors.primary}
-      />
-      <Text style={[commonStyles.subtitle, styles.quizTitle]}>Quiz Mode</Text>
-      <Text style={[commonStyles.textSecondary, styles.quizDescription]}>
-        Test your knowledge with {lesson.quiz?.questions.length} questions
-      </Text>
-      <Text style={[commonStyles.textSecondary, styles.quizDescription]}>
-        Time limit: {lesson.quiz?.timeLimit} minutes
-      </Text>
-      <TouchableOpacity
-        style={styles.startQuizButton}
-        onPress={() => Alert.alert('Coming Soon', 'Quiz feature will be available soon!')}
-      >
-        <Text style={styles.startQuizButtonText}>Start Quiz</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const renderQuiz = () => {
+    if (!lesson.quiz) {
+      return (
+        <View style={[styles.tabContent, styles.emptyStateContainer]}>
+          <IconSymbol
+            ios_icon_name="checkmark.circle"
+            android_material_icon_name="check-circle"
+            size={64}
+            color={colors.textSecondary}
+          />
+          <Text style={styles.emptyStateTitle}>No Quiz Yet</Text>
+          <Text style={styles.emptyStateDescription}>
+            Generate a quiz to test your knowledge with timed questions
+          </Text>
+          <TouchableOpacity
+            style={[buttonStyles.primary, styles.generateContentButton]}
+            onPress={handleGenerateContent}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <IconSymbol
+                  ios_icon_name="sparkles"
+                  android_material_icon_name="auto-awesome"
+                  size={18}
+                  color="#FFFFFF"
+                />
+                <Text style={buttonStyles.textWhite}>Generate Quiz</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={[styles.tabContent, commonStyles.centerContent]}>
+        <IconSymbol
+          ios_icon_name="checkmark.circle"
+          android_material_icon_name="check-circle"
+          size={64}
+          color={colors.primary}
+        />
+        <Text style={[commonStyles.subtitle, styles.quizTitle]}>Quiz Mode</Text>
+        <Text style={[commonStyles.textSecondary, styles.quizDescription]}>
+          Test your knowledge with {lesson.quiz?.questions.length} questions
+        </Text>
+        <Text style={[commonStyles.textSecondary, styles.quizDescription]}>
+          Time limit: {lesson.quiz?.timeLimit} minutes
+        </Text>
+        <TouchableOpacity
+          style={styles.startQuizButton}
+          onPress={() => Alert.alert('Coming Soon', 'Quiz feature will be available soon!')}
+        >
+          <Text style={styles.startQuizButtonText}>Start Quiz</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <View style={commonStyles.container}>
@@ -294,6 +466,11 @@ export default function LessonDetailScreen() {
           >
             Flashcards
           </Text>
+          {lesson.flashcards.length === 0 && (
+            <View style={styles.tabBadge}>
+              <Text style={styles.tabBadgeText}>New</Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -314,6 +491,11 @@ export default function LessonDetailScreen() {
           >
             Questions
           </Text>
+          {lesson.examQuestions.length === 0 && (
+            <View style={styles.tabBadge}>
+              <Text style={styles.tabBadgeText}>New</Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -334,6 +516,11 @@ export default function LessonDetailScreen() {
           >
             Quiz
           </Text>
+          {!lesson.quiz && (
+            <View style={styles.tabBadge}>
+              <Text style={styles.tabBadgeText}>New</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -401,6 +588,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     gap: 4,
+    position: 'relative',
   },
   tabActive: {
     borderBottomWidth: 2,
@@ -415,8 +603,57 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   },
+  tabBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: colors.highlight,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  tabBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
   tabContent: {
     flex: 1,
+  },
+  generateBanner: {
+    backgroundColor: colors.primary + '15',
+    margin: 20,
+    marginBottom: 0,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.primary + '30',
+  },
+  generateBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 16,
+  },
+  generateBannerText: {
+    flex: 1,
+  },
+  generateBannerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  generateBannerDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  generateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   notesContainer: {
     padding: 20,
@@ -425,6 +662,32 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 24,
     color: colors.text,
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateDescription: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  generateContentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 24,
   },
   flashcardContainer: {
     flex: 1,

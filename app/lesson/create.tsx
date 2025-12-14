@@ -72,8 +72,8 @@ export default function CreateLessonScreen() {
       );
       
       Alert.alert(
-        'Success! 🎉',
-        'Your lesson has been created with AI-generated content',
+        'Lesson Notes Created! 📝',
+        'Your lesson notes have been generated (400-500 words). You can now review them and generate flashcards, questions, and quizzes when ready.',
         [
           {
             text: 'View Lesson',
@@ -296,7 +296,7 @@ export default function CreateLessonScreen() {
               size={20}
               color="#FFFFFF"
             />
-            <Text style={buttonStyles.textWhite}>Generate Lesson with AI</Text>
+            <Text style={buttonStyles.textWhite}>Generate Lesson Notes</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -307,17 +307,27 @@ export default function CreateLessonScreen() {
     <View style={styles.generatingContainer}>
       <ActivityIndicator size="large" color={colors.primary} />
       <Text style={[commonStyles.subtitle, styles.generatingTitle]}>
-        Generating Your Lesson
+        Generating Lesson Notes
       </Text>
       <Text style={[commonStyles.textSecondary, styles.generatingText]}>
-        AI is creating personalized content for you...
+        AI is creating 400-500 words of comprehensive notes for you...
       </Text>
       <View style={styles.generatingSteps}>
         <GeneratingStep text="Analyzing subject and topic" />
-        <GeneratingStep text="Creating comprehensive notes" />
-        <GeneratingStep text="Generating flashcards with spaced repetition" />
-        <GeneratingStep text="Preparing exam-style questions" />
-        <GeneratingStep text="Building interactive quiz" />
+        <GeneratingStep text="Identifying key concepts" />
+        <GeneratingStep text="Creating clear explanations (400-500 words)" />
+        <GeneratingStep text="Structuring content for easy learning" />
+      </View>
+      <View style={styles.generatingNote}>
+        <IconSymbol
+          ios_icon_name="info.circle"
+          android_material_icon_name="info"
+          size={20}
+          color={colors.primary}
+        />
+        <Text style={styles.generatingNoteText}>
+          Flashcards, questions, and quizzes will be generated later
+        </Text>
       </View>
     </View>
   );
@@ -637,6 +647,7 @@ const styles = StyleSheet.create({
   generatingSteps: {
     width: '100%',
     gap: 16,
+    marginBottom: 32,
   },
   generatingStep: {
     flexDirection: 'row',
@@ -652,5 +663,20 @@ const styles = StyleSheet.create({
   generatingStepText: {
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  generatingNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.primary + '15',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  generatingNoteText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.text,
+    fontWeight: '500',
   },
 });

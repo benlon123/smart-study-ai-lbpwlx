@@ -147,82 +147,72 @@ export const generateMockLesson = (
     difficulty,
     description: `AI-generated lesson covering ${topic} in ${subject} at ${level} level (${difficulty} difficulty)`,
     notes: generateMockNotes(subject, topic, level, difficulty),
-    flashcards: generateMockFlashcards(subject, topic, 8),
-    examQuestions: generateMockExamQuestions(subject, topic, difficulty, 5),
-    quiz: {
-      id: `quiz-${lessonId}`,
-      questions: generateMockExamQuestions(subject, topic, difficulty, 10),
-      timeLimit: difficulty === 'Easy' ? 20 : difficulty === 'Normal' ? 30 : 45,
-      completed: false,
-    },
+    flashcards: [],
+    examQuestions: [],
+    quiz: undefined,
     createdAt: new Date(),
     progress: 0,
   };
 };
 
 const generateMockNotes = (subject: Subject, topic: string, level: Level, difficulty: Difficulty): string => {
-  return `# ${subject} - ${topic}
-## ${level} (${difficulty} Difficulty)
+  const notes = `# ${subject} - ${topic}
+## ${level} Level (${difficulty} Difficulty)
 
 ## Introduction
-Welcome to this comprehensive lesson on **${topic}** in ${subject}. This AI-generated content is tailored for ${level} students at ${difficulty.toLowerCase()} difficulty level.
+Welcome to this comprehensive lesson on **${topic}** in ${subject}. This AI-generated content is specifically tailored for ${level} students studying at ${difficulty.toLowerCase()} difficulty level. Understanding ${topic} is essential for your academic success and forms a crucial foundation for more advanced concepts.
 
 ## Key Concepts
 
 ### Understanding ${topic}
-${topic} is a fundamental concept in ${subject} that forms the basis for more advanced study. Understanding this topic is essential for success in your ${level} examinations.
+${topic} is a fundamental concept in ${subject} that you need to master for your ${level} examinations. This topic connects to many other areas of ${subject} and has practical applications in real-world scenarios.
 
 **Core Principles:**
-- **Principle 1**: The foundational concept that underpins ${topic}
-- **Principle 2**: How ${topic} relates to other areas of ${subject}
-- **Principle 3**: Practical applications of ${topic} in real-world scenarios
+- **Foundation**: The basic principles that underpin ${topic} and why they matter
+- **Application**: How ${topic} is used in practical situations and problem-solving
+- **Connection**: How ${topic} relates to other concepts in ${subject}
+- **Importance**: Why mastering ${topic} is crucial for exam success
 
-### Deep Dive into ${topic}
-Let's explore ${topic} in greater detail. This section will help you develop a thorough understanding of the key ideas and how they interconnect.
+### Deep Dive
+Let's explore ${topic} in greater detail. At ${difficulty.toLowerCase()} difficulty, you need to understand not just the basic concepts, but also how to apply them effectively.
 
-#### Important Terms
-- **Term 1**: A critical concept you must understand
-- **Term 2**: Another essential principle
-- **Term 3**: Key terminology for exam success
-- **Term 4**: Advanced concept for deeper understanding
+#### Essential Terms
+- **Key Term 1**: A critical concept that forms the foundation of ${topic}
+- **Key Term 2**: An important principle that builds on the foundation
+- **Key Term 3**: Advanced terminology essential for ${level} success
+- **Key Term 4**: Practical application concept for real-world problems
 
-### Application and Analysis
-Understanding theory is important, but being able to apply your knowledge is crucial for ${level} success. Here's how ${topic} is used in practice:
+### Practical Application
+Understanding theory is important, but ${level} examinations require you to demonstrate practical application. Here's how ${topic} is used:
 
-1. **Practical Application**: How to use ${topic} to solve problems
-2. **Critical Analysis**: Evaluating different approaches to ${topic}
-3. **Synthesis**: Combining ${topic} with other concepts
+1. **Problem-Solving**: Apply ${topic} principles to solve complex problems
+2. **Analysis**: Break down questions and identify key elements
+3. **Evaluation**: Assess different approaches and choose the most effective method
 
 ### Exam Techniques
-For ${level} examinations, you need to demonstrate:
-- Clear understanding of ${topic}
-- Ability to explain concepts clearly
-- Application of knowledge to new situations
-- Critical evaluation and analysis
+For ${level} success in ${subject}, you must:
+- Clearly explain ${topic} concepts using appropriate terminology
+- Demonstrate understanding through worked examples
+- Apply knowledge to unfamiliar situations
+- Show critical thinking and analytical skills
 
-## Practice Questions
-1. Define ${topic} and explain its significance in ${subject}
-2. How would you apply ${topic} to solve a real-world problem?
-3. Compare and contrast ${topic} with related concepts
-4. Evaluate the importance of ${topic} in modern ${subject}
+## Practice Approach
+To master ${topic}, follow this study plan:
+- Review these notes daily for 10-15 minutes
+- Create your own examples and practice problems
+- Test yourself regularly to identify weak areas
+- Connect ${topic} to other concepts you've learned
 
 ## Summary
-This lesson has covered the essential aspects of ${topic} in ${subject}. Make sure to:
-- Review the key concepts regularly
-- Practice with flashcards for spaced repetition
-- Complete exam-style questions
-- Test yourself with the quiz
+This lesson has introduced the essential aspects of ${topic} in ${subject} at ${level} level. The key to success is consistent practice and active engagement with the material. Make sure you understand each concept before moving forward.
 
 ## Next Steps
-- **Daily Review**: Spend 10-15 minutes reviewing flashcards
-- **Practice**: Complete at least 3 exam questions
-- **Quiz**: Test your understanding with the full quiz
-- **Identify Gaps**: Note areas that need more study
+Once you've thoroughly reviewed these notes, you can generate additional study materials including flashcards for spaced repetition, exam-style questions for practice, and interactive quizzes to test your understanding. Focus on mastering the core concepts first before moving to practice questions.`;
 
-Remember: Consistent practice and active recall are key to mastering ${topic}!`;
+  return notes;
 };
 
-const generateMockFlashcards = (subject: Subject, topic: string, count: number) => {
+export const generateMockFlashcards = (subject: Subject, topic: string, count: number) => {
   const flashcards = [];
   for (let i = 1; i <= count; i++) {
     flashcards.push({
@@ -231,13 +221,13 @@ const generateMockFlashcards = (subject: Subject, topic: string, count: number) 
       answer: `This is the answer to concept ${i} in ${topic}. It explains the fundamental principle and demonstrates how it applies to ${subject}. Understanding this concept is crucial for exam success and builds the foundation for more advanced topics.`,
       mastered: false,
       lastReviewed: undefined,
-      nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+      nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
   }
   return flashcards;
 };
 
-const generateMockExamQuestions = (subject: Subject, topic: string, difficulty: Difficulty, count: number) => {
+export const generateMockExamQuestions = (subject: Subject, topic: string, difficulty: Difficulty, count: number) => {
   const questions = [];
   for (let i = 1; i <= count; i++) {
     const isMultipleChoice = i % 2 === 0;
@@ -258,6 +248,15 @@ const generateMockExamQuestions = (subject: Subject, topic: string, difficulty: 
     });
   }
   return questions;
+};
+
+export const generateMockQuiz = (subject: Subject, topic: string, difficulty: Difficulty, lessonId: string) => {
+  return {
+    id: `quiz-${lessonId}`,
+    questions: generateMockExamQuestions(subject, topic, difficulty, 10),
+    timeLimit: difficulty === 'Easy' ? 20 : difficulty === 'Normal' ? 30 : 45,
+    completed: false,
+  };
 };
 
 export const sampleLessons: Lesson[] = [];

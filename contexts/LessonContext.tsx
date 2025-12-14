@@ -1,7 +1,13 @@
 
 import React, { createContext, useContext, useState } from 'react';
 import { Lesson, Subject, Level, Difficulty } from '@/types/lesson';
-import { generateMockLesson, sampleLessons } from '@/utils/mockData';
+import { 
+  generateMockLesson, 
+  sampleLessons, 
+  generateMockFlashcards, 
+  generateMockExamQuestions,
+  generateMockQuiz 
+} from '@/utils/mockData';
 
 interface LessonContextType {
   lessons: Lesson[];
@@ -12,6 +18,7 @@ interface LessonContextType {
     level: Level,
     difficulty: Difficulty
   ) => Promise<Lesson>;
+  generateRemainingContent: (lessonId: string) => Promise<void>;
   deleteLesson: (lessonId: string) => void;
   updateLessonProgress: (lessonId: string, progress: number) => void;
   getLessonById: (lessonId: string) => Lesson | undefined;
@@ -38,17 +45,47 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     difficulty: Difficulty
   ): Promise<Lesson> => {
     try {
-      // Simulate AI generation delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('Creating lesson with notes only...');
+      await new Promise(resolve => setTimeout(resolve, 2500));
       
       const newLesson = generateMockLesson(name, subject, topic, level, difficulty);
       setLessons(prev => [newLesson, ...prev]);
       
-      console.log('Lesson created:', newLesson);
+      console.log('Lesson created with notes:', newLesson);
       return newLesson;
     } catch (error) {
       console.error('Error creating lesson:', error);
       throw new Error('Failed to create lesson. Please try again.');
+    }
+  };
+
+  const generateRemainingContent = async (lessonId: string): Promise<void> => {
+    try {
+      console.log('Generating remaining content for lesson:', lessonId);
+      
+      const lesson = lessons.find(l => l.id === lessonId);
+      if (!lesson) {
+        throw new Error('Lesson not found');
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      const flashcards = generateMockFlashcards(lesson.subject, lesson.topic, 8);
+      const examQuestions = generateMockExamQuestions(lesson.subject, lesson.topic, lesson.difficulty, 5);
+      const quiz = generateMockQuiz(lesson.subject, lesson.topic, lesson.difficulty, lessonId);
+
+      setLessons(prev =>
+        prev.map(l =>
+          l.id === lessonId
+            ? { ...l, flashcards, examQuestions, quiz }
+            : l
+        )
+      );
+
+      console.log('Remaining content generated successfully');
+    } catch (error) {
+      console.error('Error generating remaining content:', error);
+      throw new Error('Failed to generate content. Please try again.');
     }
   };
 
@@ -75,6 +112,7 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       value={{
         lessons,
         createLesson,
+        generateRemainingContent,
         deleteLesson,
         updateLessonProgress,
         getLessonById,
