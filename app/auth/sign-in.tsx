@@ -34,8 +34,12 @@ export default function SignInScreen() {
     setIsLoading(true);
     try {
       await signIn(email, password);
+      console.log('Sign in successful, navigating to home...');
+      
+      // Navigate to home immediately after successful sign in
       router.replace('/(tabs)/(home)/');
     } catch (error) {
+      console.error('Sign in error:', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign in');
     } finally {
       setIsLoading(false);
@@ -167,7 +171,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingTop: 20,
   },
   subtitle: {
     textAlign: 'center',

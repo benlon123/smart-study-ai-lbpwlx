@@ -46,17 +46,20 @@ export default function SignUpScreen() {
     setIsLoading(true);
     try {
       await signUp(name, email, password);
-      Alert.alert(
-        'Success!',
-        'Account created successfully. Please save your password in a secure location.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/(tabs)/(home)/'),
-          },
-        ]
-      );
+      console.log('Sign up successful, navigating to home...');
+      
+      // Navigate to home immediately after successful sign up
+      router.replace('/(tabs)/(home)/');
+      
+      // Show success message after navigation
+      setTimeout(() => {
+        Alert.alert(
+          'Success!',
+          'Account created successfully. Please save your password in a secure location.'
+        );
+      }, 500);
     } catch (error) {
+      console.error('Sign up error:', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign up');
     } finally {
       setIsLoading(false);
