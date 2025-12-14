@@ -48,13 +48,13 @@ export interface Flashcard {
 export interface ExamQuestion {
   id: string;
   question: string;
-  type: 'multiple-choice' | 'short-answer' | 'essay';
+  type: 'multiple-choice' | 'multi-select' | 'short-answer' | 'essay';
   options?: string[];
-  correctAnswer: string;
+  correctAnswer: string | string[]; // Can be single answer or array for multi-select
   explanation: string;
   hint?: string;
   marks: number;
-  userAnswer?: string;
+  userAnswer?: string | string[];
   isCorrect?: boolean;
 }
 
@@ -97,17 +97,29 @@ export interface Task {
   points: number;
 }
 
+export interface PremiumGrant {
+  id: string;
+  userId: string;
+  grantedBy: string;
+  grantedAt: Date;
+  expiresAt?: Date;
+  isPermanent: boolean;
+  reason?: string;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   isPremium: boolean;
+  premiumGrant?: PremiumGrant;
   lessons: Lesson[];
   tasks: Task[];
   streak: number;
   points: number;
   badges: string[];
   settings: UserSettings;
+  signupDate: Date;
 }
 
 export interface UserSettings {
@@ -146,4 +158,21 @@ export interface UserSettings {
 export interface SubjectTopic {
   subject: Subject;
   topics: string[];
+}
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'announcement' | 'update' | 'reminder' | 'alert';
+  targetUsers: 'all' | 'premium' | 'free' | string[];
+  createdAt: Date;
+  createdBy: string;
+  read: boolean;
+}
+
+export interface AppSettings {
+  aiGenerationLimit: number;
+  defaultTaskCount: number;
+  maintenanceMode: boolean;
 }

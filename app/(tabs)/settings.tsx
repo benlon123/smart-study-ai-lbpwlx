@@ -18,7 +18,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, isAdmin, signOut } = useAuth();
   const { settings, toggleDyslexiaFont, toggleDarkMode, toggleHighContrast, toggleNotifications } = useSettings();
 
   const handleSignOut = () => {
@@ -96,6 +96,41 @@ export default function SettingsScreen() {
             Customize your learning experience
           </Text>
         </View>
+
+        {isAdmin && (
+          <TouchableOpacity
+            style={[styles.adminBanner, { backgroundColor: cardBg }]}
+            onPress={() => router.push('/(tabs)/admin')}
+          >
+            <IconSymbol
+              ios_icon_name="shield.fill"
+              android_material_icon_name="admin-panel-settings"
+              size={28}
+              color={colors.primary}
+            />
+            <View style={styles.adminBannerText}>
+              <Text style={[
+                styles.adminBannerTitle,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { color: textColor }
+              ]}>
+                Admin Panel
+              </Text>
+              <Text style={[
+                styles.adminBannerSubtitle,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+              ]}>
+                Manage users, premium features & app settings
+              </Text>
+            </View>
+            <IconSymbol
+              ios_icon_name="chevron.right"
+              android_material_icon_name="chevron-right"
+              size={20}
+              color={textColor}
+            />
+          </TouchableOpacity>
+        )}
 
         {!user?.isPremium && (
           <TouchableOpacity
@@ -873,6 +908,34 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.text,
     marginBottom: 4,
+  },
+  adminBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 12,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 3,
+    borderWidth: 2,
+    borderColor: colors.primary + '30',
+  },
+  adminBannerText: {
+    flex: 1,
+  },
+  adminBannerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  adminBannerSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
   },
   premiumBanner: {
     flexDirection: 'row',

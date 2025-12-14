@@ -296,29 +296,60 @@ export const generateMockExamQuestions = (subject: Subject, topic: string, diffi
   const questions = [];
   
   for (let i = 1; i <= count; i++) {
-    const isMultipleChoice = i % 2 === 0;
+    const questionType = i % 3;
     const concept = content.concepts[i % content.concepts.length];
     const example = content.examples[i % content.examples.length];
     
-    questions.push({
-      id: `question-${i}-${Date.now()}`,
-      question: isMultipleChoice 
-        ? `Which of the following best describes ${concept} in ${topic}?`
-        : `Explain how ${concept} applies in ${topic}. Use ${example} to support your answer.`,
-      type: isMultipleChoice ? 'multiple-choice' : 'short-answer',
-      options: isMultipleChoice ? [
-        `A definition that is partially correct but missing key elements`,
-        `The correct comprehensive definition of ${concept} with proper context`,
-        `A common misconception about ${concept}`,
-        `An unrelated concept from a different area of ${subject}`,
-      ] : undefined,
-      correctAnswer: isMultipleChoice 
-        ? `The correct comprehensive definition of ${concept} with proper context`
-        : `A comprehensive answer should explain ${concept}, demonstrate understanding through ${example}, and show how this applies to ${topic}. ${difficulty === 'Hard' ? 'Include critical analysis and evaluation.' : ''}`,
-      explanation: `This question tests your understanding of ${concept} within ${topic}. ${difficulty === 'Hard' ? 'At this level, you need to demonstrate critical thinking, analysis, and the ability to synthesize information.' : difficulty === 'Normal' ? 'You should be able to explain the concept and apply it to examples.' : 'Focus on understanding the basic principles and being able to explain them clearly.'}`,
-      hint: `Think about ${concept} and how it relates to ${example}. Consider the key terminology: ${content.keyTerms.slice(0, 3).join(', ')}.`,
-      marks: difficulty === 'Easy' ? 2 : difficulty === 'Normal' ? 4 : 6,
-    });
+    if (questionType === 0) {
+      // Single choice multiple choice
+      questions.push({
+        id: `question-${i}-${Date.now()}`,
+        question: `Which of the following best describes ${concept} in ${topic}?`,
+        type: 'multiple-choice',
+        options: [
+          `A definition that is partially correct but missing key elements`,
+          `The correct comprehensive definition of ${concept} with proper context`,
+          `A common misconception about ${concept}`,
+          `An unrelated concept from a different area of ${subject}`,
+        ],
+        correctAnswer: `The correct comprehensive definition of ${concept} with proper context`,
+        explanation: `This question tests your understanding of ${concept} within ${topic}. ${difficulty === 'Hard' ? 'At this level, you need to demonstrate critical thinking, analysis, and the ability to synthesize information.' : difficulty === 'Normal' ? 'You should be able to explain the concept and apply it to examples.' : 'Focus on understanding the basic principles and being able to explain them clearly.'}`,
+        hint: `Think about ${concept} and how it relates to ${example}. Consider the key terminology: ${content.keyTerms.slice(0, 3).join(', ')}.`,
+        marks: difficulty === 'Easy' ? 2 : difficulty === 'Normal' ? 4 : 6,
+      });
+    } else if (questionType === 1) {
+      // Multi-select question
+      const correctOptions = [
+        `${content.keyTerms[i % content.keyTerms.length]} is a key component`,
+        `${content.concepts[(i + 1) % content.concepts.length]} applies here`,
+      ];
+      const incorrectOptions = [
+        `This is not related to ${topic}`,
+        `This contradicts the principles of ${concept}`,
+      ];
+      
+      questions.push({
+        id: `question-${i}-${Date.now()}`,
+        question: `Which of the following statements about ${concept} in ${topic} are correct? (Select all that apply)`,
+        type: 'multi-select',
+        options: [...correctOptions, ...incorrectOptions].sort(() => Math.random() - 0.5),
+        correctAnswer: correctOptions,
+        explanation: `This multi-select question tests your comprehensive understanding of ${concept}. Both correct answers highlight important aspects of ${topic}. ${difficulty === 'Hard' ? 'You need to identify all correct statements to demonstrate mastery.' : 'Understanding multiple facets of the concept is essential.'}`,
+        hint: `Consider which statements accurately reflect the principles of ${concept}. Think about ${example}.`,
+        marks: difficulty === 'Easy' ? 3 : difficulty === 'Normal' ? 5 : 8,
+      });
+    } else {
+      // Short answer
+      questions.push({
+        id: `question-${i}-${Date.now()}`,
+        question: `Explain how ${concept} applies in ${topic}. Use ${example} to support your answer.`,
+        type: 'short-answer',
+        correctAnswer: `A comprehensive answer should explain ${concept}, demonstrate understanding through ${example}, and show how this applies to ${topic}. ${difficulty === 'Hard' ? 'Include critical analysis and evaluation.' : ''}`,
+        explanation: `This question tests your ability to explain and apply ${concept} within ${topic}. ${difficulty === 'Hard' ? 'At this level, you need to demonstrate critical thinking, analysis, and the ability to synthesize information.' : difficulty === 'Normal' ? 'You should be able to explain the concept and apply it to examples.' : 'Focus on understanding the basic principles and being able to explain them clearly.'}`,
+        hint: `Think about ${concept} and how it relates to ${example}. Consider the key terminology: ${content.keyTerms.slice(0, 3).join(', ')}.`,
+        marks: difficulty === 'Easy' ? 4 : difficulty === 'Normal' ? 6 : 10,
+      });
+    }
   }
   return questions;
 };

@@ -22,7 +22,7 @@ type TabType = 'notes' | 'flashcards' | 'quiz';
 
 interface QuizAnswer {
   questionId: string;
-  selectedAnswer: string;
+  selectedAnswer: string | string[];
   isCorrect: boolean;
 }
 
@@ -50,6 +50,7 @@ export default function LessonDetailScreen() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<QuizAnswer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
+  const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
 
   const lesson = getLessonById(id as string);
@@ -153,20 +154,49 @@ export default function LessonDetailScreen() {
     setCurrentQuestionIndex(0);
     setQuizAnswers([]);
     setSelectedAnswer('');
+    setSelectedAnswers([]);
     setShowResults(false);
   };
 
   const handleSelectAnswer = (answer: string) => {
-    setSelectedAnswer(answer);
+    if (currentQuestion?.type === 'multi-select') {
+      // Toggle answer in multi-select
+      if (selectedAnswers.includes(answer)) {
+        setSelectedAnswers(selectedAnswers.filter(a => a !== answer));
+      } else {
+        setSelectedAnswers([...selectedAnswers, answer]);
+      }
+    } else {
+      // Single select
+      setSelectedAnswer(answer);
+    }
   };
 
   const handleSubmitAnswer = () => {
-    if (!selectedAnswer || !currentQuestion) return;
+    if (!currentQuestion) return;
+    
+    const isMultiSelect = currentQuestion.type === 'multi-select';
+    const userAnswer = isMultiSelect ? selectedAnswers : selectedAnswer;
+    
+    if ((isMultiSelect && selectedAnswers.length === 0) || (!isMultiSelect && !selectedAnswer)) {
+      Alert.alert('No Answer Selected', 'Please select at least one answer before continuing.');
+      return;
+    }
 
-    const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+    let isCorrect = false;
+    
+    if (isMultiSelect && Array.isArray(currentQuestion.correctAnswer)) {
+      // Check if arrays match (order doesn't matter)
+      const sortedUserAnswers = [...selectedAnswers].sort();
+      const sortedCorrectAnswers = [...currentQuestion.correctAnswer].sort();
+      isCorrect = JSON.stringify(sortedUserAnswers) === JSON.stringify(sortedCorrectAnswers);
+    } else if (!isMultiSelect) {
+      isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+    }
+
     const newAnswer: QuizAnswer = {
       questionId: currentQuestion.id,
-      selectedAnswer,
+      selectedAnswer: userAnswer,
       isCorrect,
     };
 
@@ -176,6 +206,7 @@ export default function LessonDetailScreen() {
     if (currentQuestionIndex < (lesson.quiz?.questions.length || 0) - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer('');
+      setSelectedAnswers([]);
     } else {
       setShowResults(true);
     }
@@ -186,6 +217,7 @@ export default function LessonDetailScreen() {
     setCurrentQuestionIndex(0);
     setQuizAnswers([]);
     setSelectedAnswer('');
+    setSelectedAnswers([]);
     setShowResults(false);
   };
 
@@ -548,6 +580,9 @@ export default function LessonDetailScreen() {
             {lesson.quiz?.questions.map((question, index) => {
               const userAnswer = quizAnswers.find(a => a.questionId === question.id);
               const isCorrect = userAnswer?.isCorrect || false;
+              const isMultiSelect = question.type === 'multi-select';
+              const userAnswerArray = Array.isArray(userAnswer?.selectedAnswer) ? userAnswer.selectedAnswer : [userAnswer?.selectedAnswer];
+              const correctAnswerArray = Array.isArray(question.correctAnswer) ? question.correctAnswer : [question.correctAnswer];
 
               return (
                 <View key={index} style={[
@@ -557,6 +592,7 @@ export default function LessonDetailScreen() {
                   <View style={styles.resultQuestionHeader}>
                     <Text style={[styles.resultQuestionNumber, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
                       Question {index + 1}
+                      {isMultiSelect && <Text style={styles.multiSelectBadge}> (Multi-Select)</Text>}
                     </Text>
                     <View style={[styles.resultBadge, isCorrect ? styles.resultBadgeCorrect : styles.resultBadgeIncorrect]}>
                       <IconSymbol
@@ -575,11 +611,11 @@ export default function LessonDetailScreen() {
                     {question.question}
                   </Text>
 
-                  {question.type === 'multiple-choice' && question.options && (
+                  {question.options && (
                     <View style={styles.resultOptionsContainer}>
                       {question.options.map((option, optionIndex) => {
-                        const isUserAnswer = option === userAnswer?.selectedAnswer;
-                        const isCorrectAnswer = option === question.correctAnswer;
+                        const isUserAnswer = userAnswerArray.includes(option);
+                        const isCorrectAnswer = correctAnswerArray.includes(option);
 
                         return (
                           <View
@@ -605,7 +641,7 @@ export default function LessonDetailScreen() {
                                 color={colors.success}
                               />
                             )}
-                            {isUserAnswer && !isCorrect && (
+                            {isUserAnswer && !isCorrectAnswer && (
                               <IconSymbol
                                 ios_icon_name="xmark.circle.fill"
                                 android_material_icon_name="cancel"
@@ -629,11 +665,13 @@ export default function LessonDetailScreen() {
                     {!isCorrect && (
                       <View style={styles.correctAnswerBox}>
                         <Text style={[styles.correctAnswerLabel, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
-                          Correct Answer:
+                          Correct Answer{isMultiSelect ? 's' : ''}:
                         </Text>
-                        <Text style={[styles.correctAnswerText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
-                          {question.correctAnswer}
-                        </Text>
+                        {correctAnswerArray.map((ans, idx) => (
+                          <Text key={idx} style={[styles.correctAnswerText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                            {isMultiSelect ? `• ${ans}` : ans}
+                          </Text>
+                        ))}
                       </View>
                     )}
                   </View>
@@ -662,6 +700,8 @@ export default function LessonDetailScreen() {
   const renderQuizQuestion = () => {
     if (!currentQuestion) return null;
 
+    const isMultiSelect = currentQuestion.type === 'multi-select';
+
     return (
       <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
         <View style={styles.quizQuestionContainer}>
@@ -686,41 +726,69 @@ export default function LessonDetailScreen() {
                   {currentQuestion.marks} marks
                 </Text>
               </View>
+              {isMultiSelect && (
+                <View style={[styles.marksBadge, { backgroundColor: colors.highlight }]}>
+                  <Text style={[styles.marksText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                    Multi-Select
+                  </Text>
+                </View>
+              )}
             </View>
 
             <Text style={[styles.quizQuestionText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
               {currentQuestion.question}
             </Text>
 
-            {currentQuestion.type === 'multiple-choice' && currentQuestion.options && (
+            {isMultiSelect && (
+              <Text style={[styles.multiSelectHint, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                Select all correct answers
+              </Text>
+            )}
+
+            {currentQuestion.options && (
               <View style={styles.quizOptionsContainer}>
-                {currentQuestion.options.map((option, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.quizOption,
-                      selectedAnswer === option && styles.quizOptionSelected,
-                      settings.accessibility.highContrast && styles.highContrastCard
-                    ]}
-                    onPress={() => handleSelectAnswer(option)}
-                  >
-                    <View style={[
-                      styles.quizOptionRadio,
-                      selectedAnswer === option && styles.quizOptionRadioSelected
-                    ]}>
-                      {selectedAnswer === option && (
-                        <View style={styles.quizOptionRadioInner} />
-                      )}
-                    </View>
-                    <Text style={[
-                      styles.quizOptionText,
-                      selectedAnswer === option && styles.quizOptionTextSelected,
-                      settings.accessibility.dyslexiaFont && styles.dyslexiaFont
-                    ]}>
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {currentQuestion.options.map((option, index) => {
+                  const isSelected = isMultiSelect 
+                    ? selectedAnswers.includes(option)
+                    : selectedAnswer === option;
+
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.quizOption,
+                        isSelected && styles.quizOptionSelected,
+                        settings.accessibility.highContrast && styles.highContrastCard
+                      ]}
+                      onPress={() => handleSelectAnswer(option)}
+                    >
+                      <View style={[
+                        isMultiSelect ? styles.quizOptionCheckbox : styles.quizOptionRadio,
+                        isSelected && (isMultiSelect ? styles.quizOptionCheckboxSelected : styles.quizOptionRadioSelected)
+                      ]}>
+                        {isSelected && (
+                          isMultiSelect ? (
+                            <IconSymbol
+                              ios_icon_name="checkmark"
+                              android_material_icon_name="check"
+                              size={16}
+                              color="#FFFFFF"
+                            />
+                          ) : (
+                            <View style={styles.quizOptionRadioInner} />
+                          )
+                        )}
+                      </View>
+                      <Text style={[
+                        styles.quizOptionText,
+                        isSelected && styles.quizOptionTextSelected,
+                        settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                      ]}>
+                        {option}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             )}
 
@@ -743,10 +811,10 @@ export default function LessonDetailScreen() {
             style={[
               buttonStyles.primary,
               styles.submitAnswerButton,
-              !selectedAnswer && styles.submitAnswerButtonDisabled
+              ((isMultiSelect && selectedAnswers.length === 0) || (!isMultiSelect && !selectedAnswer)) && styles.submitAnswerButtonDisabled
             ]}
             onPress={handleSubmitAnswer}
-            disabled={!selectedAnswer}
+            disabled={(isMultiSelect && selectedAnswers.length === 0) || (!isMultiSelect && !selectedAnswer)}
           >
             <Text style={buttonStyles.textWhite}>
               {currentQuestionIndex < (lesson.quiz?.questions.length || 0) - 1 ? 'Next Question' : 'Finish Quiz'}
@@ -1279,6 +1347,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginBottom: 12,
+    gap: 8,
   },
   marksBadge: {
     paddingHorizontal: 10,
@@ -1296,7 +1365,18 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: colors.text,
     fontWeight: '600',
-    marginBottom: 20,
+    marginBottom: 12,
+  },
+  multiSelectHint: {
+    fontSize: 13,
+    color: colors.highlight,
+    fontStyle: 'italic',
+    marginBottom: 12,
+  },
+  multiSelectBadge: {
+    fontSize: 12,
+    color: colors.highlight,
+    fontWeight: '600',
   },
   quizOptionsContainer: {
     gap: 12,
@@ -1331,6 +1411,19 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
+    backgroundColor: colors.primary,
+  },
+  quizOptionCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quizOptionCheckboxSelected: {
+    borderColor: colors.primary,
     backgroundColor: colors.primary,
   },
   quizOptionText: {
@@ -1430,6 +1523,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: colors.primary,
+    flex: 1,
   },
   resultBadge: {
     flexDirection: 'row',
