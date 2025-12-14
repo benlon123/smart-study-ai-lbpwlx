@@ -72,8 +72,8 @@ export default function CreateLessonScreen() {
       );
       
       Alert.alert(
-        'Lesson Notes Created! 📝',
-        'Your lesson notes have been generated (400-500 words). You can now review them and generate flashcards, questions, and quizzes when ready.',
+        'Lesson Created! 📚',
+        'Your lesson container has been created. You can now generate Notes, Flashcards, or Quiz inside the lesson.',
         [
           {
             text: 'View Lesson',
@@ -296,7 +296,7 @@ export default function CreateLessonScreen() {
               size={20}
               color="#FFFFFF"
             />
-            <Text style={buttonStyles.textWhite}>Generate Lesson Notes</Text>
+            <Text style={buttonStyles.textWhite}>Create Lesson Container</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -307,16 +307,15 @@ export default function CreateLessonScreen() {
     <View style={styles.generatingContainer}>
       <ActivityIndicator size="large" color={colors.primary} />
       <Text style={[commonStyles.subtitle, styles.generatingTitle]}>
-        Generating Lesson Notes
+        Creating Lesson Container
       </Text>
       <Text style={[commonStyles.textSecondary, styles.generatingText]}>
-        AI is creating 400-500 words of comprehensive notes for you...
+        Setting up your lesson with selected parameters...
       </Text>
       <View style={styles.generatingSteps}>
-        <GeneratingStep text="Analyzing subject and topic" />
-        <GeneratingStep text="Identifying key concepts" />
-        <GeneratingStep text="Creating clear explanations (400-500 words)" />
-        <GeneratingStep text="Structuring content for easy learning" />
+        <GeneratingStep text="Creating lesson structure" />
+        <GeneratingStep text="Saving lesson details" />
+        <GeneratingStep text="Preparing for content generation" />
       </View>
       <View style={styles.generatingNote}>
         <IconSymbol
@@ -326,7 +325,7 @@ export default function CreateLessonScreen() {
           color={colors.primary}
         />
         <Text style={styles.generatingNoteText}>
-          Flashcards, questions, and quizzes will be generated later
+          You&apos;ll be able to generate Notes, Flashcards, and Quiz inside the lesson
         </Text>
       </View>
     </View>

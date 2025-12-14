@@ -6,7 +6,8 @@ import {
   sampleLessons, 
   generateMockFlashcards, 
   generateMockExamQuestions,
-  generateMockQuiz 
+  generateMockQuiz,
+  generateMockNotes
 } from '@/utils/mockData';
 
 interface LessonContextType {
@@ -18,7 +19,9 @@ interface LessonContextType {
     level: Level,
     difficulty: Difficulty
   ) => Promise<Lesson>;
-  generateRemainingContent: (lessonId: string) => Promise<void>;
+  generateNotes: (lessonId: string) => Promise<void>;
+  generateFlashcards: (lessonId: string) => Promise<void>;
+  generateQuiz: (lessonId: string) => Promise<void>;
   deleteLesson: (lessonId: string) => void;
   updateLessonProgress: (lessonId: string, progress: number) => void;
   getLessonById: (lessonId: string) => Lesson | undefined;
@@ -45,13 +48,13 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     difficulty: Difficulty
   ): Promise<Lesson> => {
     try {
-      console.log('Creating lesson with notes only...');
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      console.log('Creating lesson container only (no content)...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       const newLesson = generateMockLesson(name, subject, topic, level, difficulty);
       setLessons(prev => [newLesson, ...prev]);
       
-      console.log('Lesson created with notes:', newLesson);
+      console.log('Lesson container created:', newLesson);
       return newLesson;
     } catch (error) {
       console.error('Error creating lesson:', error);
@@ -59,33 +62,100 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const generateRemainingContent = async (lessonId: string): Promise<void> => {
+  const generateNotes = async (lessonId: string): Promise<void> => {
     try {
-      console.log('Generating remaining content for lesson:', lessonId);
+      console.log('Generating notes for lesson:', lessonId);
       
       const lesson = lessons.find(l => l.id === lessonId);
       if (!lesson) {
         throw new Error('Lesson not found');
       }
 
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      if (lesson.notes) {
+        throw new Error('Notes already generated for this lesson');
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      
+      const notes = generateMockNotes(lesson.subject, lesson.topic, lesson.level, lesson.difficulty);
+
+      setLessons(prev =>
+        prev.map(l =>
+          l.id === lessonId
+            ? { ...l, notes }
+            : l
+        )
+      );
+
+      console.log('Notes generated successfully');
+    } catch (error) {
+      console.error('Error generating notes:', error);
+      throw error;
+    }
+  };
+
+  const generateFlashcards = async (lessonId: string): Promise<void> => {
+    try {
+      console.log('Generating flashcards for lesson:', lessonId);
+      
+      const lesson = lessons.find(l => l.id === lessonId);
+      if (!lesson) {
+        throw new Error('Lesson not found');
+      }
+
+      if (lesson.flashcards.length > 0) {
+        throw new Error('Flashcards already generated for this lesson');
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       const flashcards = generateMockFlashcards(lesson.subject, lesson.topic, 8);
+
+      setLessons(prev =>
+        prev.map(l =>
+          l.id === lessonId
+            ? { ...l, flashcards }
+            : l
+        )
+      );
+
+      console.log('Flashcards generated successfully');
+    } catch (error) {
+      console.error('Error generating flashcards:', error);
+      throw error;
+    }
+  };
+
+  const generateQuiz = async (lessonId: string): Promise<void> => {
+    try {
+      console.log('Generating quiz for lesson:', lessonId);
+      
+      const lesson = lessons.find(l => l.id === lessonId);
+      if (!lesson) {
+        throw new Error('Lesson not found');
+      }
+
+      if (lesson.quiz) {
+        throw new Error('Quiz already generated for this lesson');
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      
       const examQuestions = generateMockExamQuestions(lesson.subject, lesson.topic, lesson.difficulty, 5);
       const quiz = generateMockQuiz(lesson.subject, lesson.topic, lesson.difficulty, lessonId);
 
       setLessons(prev =>
         prev.map(l =>
           l.id === lessonId
-            ? { ...l, flashcards, examQuestions, quiz }
+            ? { ...l, examQuestions, quiz }
             : l
         )
       );
 
-      console.log('Remaining content generated successfully');
+      console.log('Quiz generated successfully');
     } catch (error) {
-      console.error('Error generating remaining content:', error);
-      throw new Error('Failed to generate content. Please try again.');
+      console.error('Error generating quiz:', error);
+      throw error;
     }
   };
 
@@ -112,7 +182,9 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       value={{
         lessons,
         createLesson,
-        generateRemainingContent,
+        generateNotes,
+        generateFlashcards,
+        generateQuiz,
         deleteLesson,
         updateLessonProgress,
         getLessonById,

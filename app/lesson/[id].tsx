@@ -15,16 +15,17 @@ import { useLesson } from '@/contexts/LessonContext';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
-type TabType = 'notes' | 'flashcards' | 'questions' | 'quiz';
+type TabType = 'notes' | 'flashcards' | 'quiz';
 
 export default function LessonDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { getLessonById, generateRemainingContent } = useLesson();
+  const { getLessonById, generateNotes, generateFlashcards, generateQuiz } = useLesson();
   const [activeTab, setActiveTab] = useState<TabType>('notes');
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingType, setGeneratingType] = useState<'notes' | 'flashcards' | 'quiz' | null>(null);
 
   const lesson = getLessonById(id as string);
 
@@ -39,22 +40,61 @@ export default function LessonDetailScreen() {
     );
   }
 
-  const hasRemainingContent = lesson.flashcards.length > 0 || lesson.examQuestions.length > 0 || lesson.quiz;
   const currentFlashcard = lesson.flashcards[currentFlashcardIndex];
 
-  const handleGenerateContent = async () => {
+  const handleGenerateNotes = async () => {
     setIsGenerating(true);
+    setGeneratingType('notes');
     try {
-      await generateRemainingContent(lesson.id);
+      await generateNotes(lesson.id);
       Alert.alert(
-        'Content Generated! 🎉',
-        'Flashcards, exam questions, and quiz have been created successfully.',
+        'Notes Generated! 📝',
+        'Your lesson notes (400-500 words) have been created successfully.',
         [{ text: 'OK' }]
       );
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to generate content');
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to generate notes');
     } finally {
       setIsGenerating(false);
+      setGeneratingType(null);
+    }
+  };
+
+  const handleGenerateFlashcards = async () => {
+    setIsGenerating(true);
+    setGeneratingType('flashcards');
+    try {
+      await generateFlashcards(lesson.id);
+      Alert.alert(
+        'Flashcards Generated! 🎴',
+        'Your flashcards have been created successfully.',
+        [{ text: 'OK' }]
+      );
+      setActiveTab('flashcards');
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to generate flashcards');
+    } finally {
+      setIsGenerating(false);
+      setGeneratingType(null);
+    }
+  };
+
+  const handleGenerateQuiz = async () => {
+    setIsGenerating(true);
+    setGeneratingType('quiz');
+    try {
+      await generateQuiz(lesson.id);
+      Alert.alert(
+        'Quiz Generated! 📋',
+        'Your quiz and exam questions have been created successfully.',
+        [{ text: 'OK' }]
+      );
+      setActiveTab('quiz');
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to generate quiz');
+    } finally {
+      setIsGenerating(false);
+      setGeneratingType(null);
     }
   };
 
@@ -72,52 +112,51 @@ export default function LessonDetailScreen() {
     }
   };
 
-  const renderGenerateContentBanner = () => (
-    <View style={styles.generateBanner}>
-      <View style={styles.generateBannerContent}>
-        <IconSymbol
-          ios_icon_name="sparkles"
-          android_material_icon_name="auto-awesome"
-          size={32}
-          color={colors.primary}
-        />
-        <View style={styles.generateBannerText}>
-          <Text style={styles.generateBannerTitle}>Ready for More?</Text>
-          <Text style={styles.generateBannerDescription}>
-            Generate flashcards, exam questions, and quizzes to enhance your learning
+  const renderNotes = () => {
+    if (!lesson.notes) {
+      return (
+        <View style={[styles.tabContent, styles.emptyStateContainer]}>
+          <IconSymbol
+            ios_icon_name="note.text"
+            android_material_icon_name="description"
+            size={64}
+            color={colors.textSecondary}
+          />
+          <Text style={styles.emptyStateTitle}>No Notes Yet</Text>
+          <Text style={styles.emptyStateDescription}>
+            Generate comprehensive notes (400-500 words) covering key concepts for this lesson
           </Text>
+          <TouchableOpacity
+            style={[buttonStyles.primary, styles.generateContentButton]}
+            onPress={handleGenerateNotes}
+            disabled={isGenerating}
+          >
+            {isGenerating && generatingType === 'notes' ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <IconSymbol
+                  ios_icon_name="sparkles"
+                  android_material_icon_name="auto-awesome"
+                  size={18}
+                  color="#FFFFFF"
+                />
+                <Text style={buttonStyles.textWhite}>Generate Notes</Text>
+              </>
+            )}
+          </TouchableOpacity>
         </View>
-      </View>
-      <TouchableOpacity
-        style={[buttonStyles.primary, styles.generateButton]}
-        onPress={handleGenerateContent}
-        disabled={isGenerating}
-      >
-        {isGenerating ? (
-          <ActivityIndicator size="small" color="#FFFFFF" />
-        ) : (
-          <>
-            <IconSymbol
-              ios_icon_name="sparkles"
-              android_material_icon_name="auto-awesome"
-              size={18}
-              color="#FFFFFF"
-            />
-            <Text style={buttonStyles.textWhite}>Generate Content</Text>
-          </>
-        )}
-      </TouchableOpacity>
-    </View>
-  );
+      );
+    }
 
-  const renderNotes = () => (
-    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-      {!hasRemainingContent && renderGenerateContentBanner()}
-      <View style={styles.notesContainer}>
-        <Text style={styles.notesText}>{lesson.notes}</Text>
-      </View>
-    </ScrollView>
-  );
+    return (
+      <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.notesContainer}>
+          <Text style={styles.notesText}>{lesson.notes}</Text>
+        </View>
+      </ScrollView>
+    );
+  };
 
   const renderFlashcards = () => {
     if (lesson.flashcards.length === 0) {
@@ -135,10 +174,10 @@ export default function LessonDetailScreen() {
           </Text>
           <TouchableOpacity
             style={[buttonStyles.primary, styles.generateContentButton]}
-            onPress={handleGenerateContent}
+            onPress={handleGenerateFlashcards}
             disabled={isGenerating}
           >
-            {isGenerating ? (
+            {isGenerating && generatingType === 'flashcards' ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
@@ -232,26 +271,26 @@ export default function LessonDetailScreen() {
     );
   };
 
-  const renderQuestions = () => {
-    if (lesson.examQuestions.length === 0) {
+  const renderQuiz = () => {
+    if (!lesson.quiz) {
       return (
         <View style={[styles.tabContent, styles.emptyStateContainer]}>
           <IconSymbol
-            ios_icon_name="questionmark.circle"
-            android_material_icon_name="help"
+            ios_icon_name="checkmark.circle"
+            android_material_icon_name="check-circle"
             size={64}
             color={colors.textSecondary}
           />
-          <Text style={styles.emptyStateTitle}>No Questions Yet</Text>
+          <Text style={styles.emptyStateTitle}>No Quiz Yet</Text>
           <Text style={styles.emptyStateDescription}>
-            Generate exam-style questions to test your understanding
+            Generate a quiz with exam-style questions to test your knowledge
           </Text>
           <TouchableOpacity
             style={[buttonStyles.primary, styles.generateContentButton]}
-            onPress={handleGenerateContent}
+            onPress={handleGenerateQuiz}
             disabled={isGenerating}
           >
-            {isGenerating ? (
+            {isGenerating && generatingType === 'quiz' ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
               <>
@@ -261,7 +300,7 @@ export default function LessonDetailScreen() {
                   size={18}
                   color="#FFFFFF"
                 />
-                <Text style={buttonStyles.textWhite}>Generate Questions</Text>
+                <Text style={buttonStyles.textWhite}>Generate Quiz</Text>
               </>
             )}
           </TouchableOpacity>
@@ -272,7 +311,16 @@ export default function LessonDetailScreen() {
     return (
       <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
         <View style={styles.questionsContainer}>
-          {lesson.examQuestions.map((question, index) => (
+          <View style={styles.quizHeader}>
+            <Text style={styles.quizHeaderTitle}>Quiz Questions</Text>
+            <View style={styles.quizHeaderBadge}>
+              <Text style={styles.quizHeaderBadgeText}>
+                {lesson.quiz.questions.length} questions
+              </Text>
+            </View>
+          </View>
+
+          {lesson.quiz.questions.map((question, index) => (
             <React.Fragment key={index}>
               <View style={styles.questionCard}>
                 <View style={styles.questionHeader}>
@@ -339,68 +387,6 @@ export default function LessonDetailScreen() {
     );
   };
 
-  const renderQuiz = () => {
-    if (!lesson.quiz) {
-      return (
-        <View style={[styles.tabContent, styles.emptyStateContainer]}>
-          <IconSymbol
-            ios_icon_name="checkmark.circle"
-            android_material_icon_name="check-circle"
-            size={64}
-            color={colors.textSecondary}
-          />
-          <Text style={styles.emptyStateTitle}>No Quiz Yet</Text>
-          <Text style={styles.emptyStateDescription}>
-            Generate a quiz to test your knowledge with timed questions
-          </Text>
-          <TouchableOpacity
-            style={[buttonStyles.primary, styles.generateContentButton]}
-            onPress={handleGenerateContent}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <IconSymbol
-                  ios_icon_name="sparkles"
-                  android_material_icon_name="auto-awesome"
-                  size={18}
-                  color="#FFFFFF"
-                />
-                <Text style={buttonStyles.textWhite}>Generate Quiz</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    return (
-      <View style={[styles.tabContent, commonStyles.centerContent]}>
-        <IconSymbol
-          ios_icon_name="checkmark.circle"
-          android_material_icon_name="check-circle"
-          size={64}
-          color={colors.primary}
-        />
-        <Text style={[commonStyles.subtitle, styles.quizTitle]}>Quiz Mode</Text>
-        <Text style={[commonStyles.textSecondary, styles.quizDescription]}>
-          Test your knowledge with {lesson.quiz?.questions.length} questions
-        </Text>
-        <Text style={[commonStyles.textSecondary, styles.quizDescription]}>
-          Time limit: {lesson.quiz?.timeLimit} minutes
-        </Text>
-        <TouchableOpacity
-          style={styles.startQuizButton}
-          onPress={() => Alert.alert('Coming Soon', 'Quiz feature will be available soon!')}
-        >
-          <Text style={styles.startQuizButtonText}>Start Quiz</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
   return (
     <View style={commonStyles.container}>
       <View style={styles.header}>
@@ -446,6 +432,11 @@ export default function LessonDetailScreen() {
           >
             Notes
           </Text>
+          {!lesson.notes && (
+            <View style={styles.tabBadge}>
+              <Text style={styles.tabBadgeText}>New</Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -467,31 +458,6 @@ export default function LessonDetailScreen() {
             Flashcards
           </Text>
           {lesson.flashcards.length === 0 && (
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>New</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'questions' && styles.tabActive]}
-          onPress={() => setActiveTab('questions')}
-        >
-          <IconSymbol
-            ios_icon_name="questionmark.circle"
-            android_material_icon_name="help"
-            size={20}
-            color={activeTab === 'questions' ? colors.primary : colors.textSecondary}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'questions' && styles.tabTextActive,
-            ]}
-          >
-            Questions
-          </Text>
-          {lesson.examQuestions.length === 0 && (
             <View style={styles.tabBadge}>
               <Text style={styles.tabBadgeText}>New</Text>
             </View>
@@ -526,7 +492,6 @@ export default function LessonDetailScreen() {
 
       {activeTab === 'notes' && renderNotes()}
       {activeTab === 'flashcards' && renderFlashcards()}
-      {activeTab === 'questions' && renderQuestions()}
       {activeTab === 'quiz' && renderQuiz()}
     </View>
   );
@@ -619,41 +584,6 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     flex: 1,
-  },
-  generateBanner: {
-    backgroundColor: colors.primary + '15',
-    margin: 20,
-    marginBottom: 0,
-    padding: 20,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: colors.primary + '30',
-  },
-  generateBannerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginBottom: 16,
-  },
-  generateBannerText: {
-    flex: 1,
-  },
-  generateBannerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  generateBannerDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  generateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
   },
   notesContainer: {
     padding: 20,
@@ -762,6 +692,28 @@ const styles = StyleSheet.create({
   questionsContainer: {
     padding: 20,
   },
+  quizHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  quizHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  quizHeaderBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: colors.primary + '20',
+  },
+  quizHeaderBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
+  },
   questionCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
@@ -853,26 +805,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     color: colors.textSecondary,
-  },
-  quizTitle: {
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  quizDescription: {
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  startQuizButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 24,
-  },
-  startQuizButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   linkText: {
     fontSize: 16,

@@ -7,30 +7,89 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLesson } from '@/contexts/LessonContext';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Subject, Level } from '@/types/lesson';
-
-const subjects: Subject[] = [
-  'Mathematics',
-  'English Language',
-  'Physics',
-  'Chemistry',
-  'Biology',
-  'History',
-];
+import { subjectTopics } from '@/utils/mockData';
 
 const levels: Level[] = ['GCSE', 'A-Level'];
+
+interface TaskItem {
+  id: string;
+  type: 'lesson' | 'flashcards' | 'notes' | 'quiz' | 'timed-challenge';
+  title: string;
+  subject: Subject;
+  level: Level;
+  completed: boolean;
+  priority: 'low' | 'medium' | 'high';
+  points: number;
+}
 
 export default function TasksScreen() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
-  const [selectedSubject, setSelectedSubject] = useState<Subject | 'All'>('All');
-  const [selectedLevel, setSelectedLevel] = useState<Level | 'All'>('All');
+  const { lessons } = useLesson();
+  const [selectedLevel, setSelectedLevel] = useState<Level>('GCSE');
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
+  const [tasks, setTasks] = useState<TaskItem[]>([
+    {
+      id: '1',
+      type: 'lesson',
+      title: 'Complete Algebra Lesson',
+      subject: 'Mathematics',
+      level: 'GCSE',
+      completed: false,
+      priority: 'high',
+      points: 50,
+    },
+    {
+      id: '2',
+      type: 'flashcards',
+      title: 'Review Physics Flashcards',
+      subject: 'Physics',
+      level: 'A-Level',
+      completed: false,
+      priority: 'medium',
+      points: 30,
+    },
+    {
+      id: '3',
+      type: 'quiz',
+      title: 'Chemistry Quiz',
+      subject: 'Chemistry',
+      level: 'GCSE',
+      completed: false,
+      priority: 'high',
+      points: 75,
+    },
+    {
+      id: '4',
+      type: 'notes',
+      title: 'Review Biology Notes',
+      subject: 'Biology',
+      level: 'GCSE',
+      completed: true,
+      priority: 'medium',
+      points: 40,
+    },
+    {
+      id: '5',
+      type: 'lesson',
+      title: 'Complete English Literature Lesson',
+      subject: 'English Literature',
+      level: 'A-Level',
+      completed: false,
+      priority: 'high',
+      points: 60,
+    },
+  ]);
 
   if (!isAuthenticated) {
     return (
@@ -51,38 +110,118 @@ export default function TasksScreen() {
     );
   }
 
-  const mockTasks = [
-    {
-      id: '1',
-      type: 'lesson',
-      title: 'Complete Algebra Lesson',
-      subject: 'Mathematics',
-      level: 'GCSE',
-      completed: false,
-      priority: 'high',
-      points: 50,
-    },
-    {
-      id: '2',
-      type: 'flashcards',
-      title: 'Review Physics Flashcards',
-      subject: 'Physics',
-      level: 'A-Level',
-      completed: true,
-      priority: 'medium',
-      points: 30,
-    },
-    {
-      id: '3',
-      type: 'quiz',
-      title: 'Chemistry Quiz',
-      subject: 'Chemistry',
-      level: 'GCSE',
-      completed: false,
-      priority: 'high',
-      points: 75,
-    },
-  ];
+  const toggleTaskCompletion = (taskId: string) => {
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId ? { ...task, completed: !task.completed } : task
+      )
+    );
+  };
+
+  const getSubjectsForLevel = (level: Level): Subject[] => {
+    return subjectTopics.map(st => st.subject);
+  };
+
+  const filteredTasks = tasks.filter(task => {
+    const levelMatch = task.level === selectedLevel;
+    const subjectMatch = selectedSubject ? task.subject === selectedSubject : true;
+    return levelMatch && subjectMatch;
+  });
+
+  const completedTasksCount = filteredTasks.filter(t => t.completed).length;
+  const totalTasksCount = filteredTasks.length;
+  const remainingTasksCount = totalTasksCount - completedTasksCount;
+
+  const renderSubjectDropdown = () => (
+    <Modal
+      visible={showSubjectDropdown}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowSubjectDropdown(false)}
+    >
+      <TouchableOpacity
+        style={styles.dropdownOverlay}
+        activeOpacity={1}
+        onPress={() => setShowSubjectDropdown(false)}
+      >
+        <View style={styles.dropdownContainer}>
+          <View style={styles.dropdownHeader}>
+            <Text style={styles.dropdownTitle}>Select Subject</Text>
+            <TouchableOpacity onPress={() => setShowSubjectDropdown(false)}>
+              <IconSymbol
+                ios_icon_name="xmark"
+                android_material_icon_name="close"
+                size={20}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <ScrollView style={styles.dropdownScroll} showsVerticalScrollIndicator={false}>
+            <TouchableOpacity
+              style={[
+                styles.dropdownItem,
+                selectedSubject === null && styles.dropdownItemSelected,
+              ]}
+              onPress={() => {
+                setSelectedSubject(null);
+                setShowSubjectDropdown(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.dropdownItemText,
+                  selectedSubject === null && styles.dropdownItemTextSelected,
+                ]}
+              >
+                All Subjects
+              </Text>
+              {selectedSubject === null && (
+                <IconSymbol
+                  ios_icon_name="checkmark"
+                  android_material_icon_name="check"
+                  size={20}
+                  color={colors.primary}
+                />
+              )}
+            </TouchableOpacity>
+
+            {getSubjectsForLevel(selectedLevel).map((subject, index) => (
+              <React.Fragment key={index}>
+                <TouchableOpacity
+                  style={[
+                    styles.dropdownItem,
+                    selectedSubject === subject && styles.dropdownItemSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedSubject(subject);
+                    setShowSubjectDropdown(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.dropdownItemText,
+                      selectedSubject === subject && styles.dropdownItemTextSelected,
+                    ]}
+                  >
+                    {subject}
+                  </Text>
+                  {selectedSubject === subject && (
+                    <IconSymbol
+                      ios_icon_name="checkmark"
+                      android_material_icon_name="check"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  )}
+                </TouchableOpacity>
+              </React.Fragment>
+            ))}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
 
   return (
     <View style={commonStyles.container}>
@@ -105,7 +244,7 @@ export default function TasksScreen() {
               size={20}
               color={colors.accent}
             />
-            <Text style={styles.streakText}>{user?.streak} days</Text>
+            <Text style={styles.streakText}>{user?.streak || 0} days</Text>
           </View>
         </View>
 
@@ -144,151 +283,153 @@ export default function TasksScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.filtersContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterScroll}
-          >
-            <TouchableOpacity
-              style={[
-                styles.filterChip,
-                selectedSubject === 'All' && styles.filterChipSelected,
-              ]}
-              onPress={() => setSelectedSubject('All')}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedSubject === 'All' && styles.filterChipTextSelected,
-                ]}
-              >
-                All Subjects
-              </Text>
-            </TouchableOpacity>
-            {subjects.map((subject, index) => (
+        <View style={styles.filtersSection}>
+          <Text style={styles.filterLabel}>Level</Text>
+          <View style={styles.levelFilters}>
+            {levels.map((level, index) => (
               <React.Fragment key={index}>
                 <TouchableOpacity
                   style={[
-                    styles.filterChip,
-                    selectedSubject === subject && styles.filterChipSelected,
+                    styles.levelChip,
+                    selectedLevel === level && styles.levelChipSelected,
                   ]}
-                  onPress={() => setSelectedSubject(subject)}
+                  onPress={() => {
+                    setSelectedLevel(level);
+                    setSelectedSubject(null);
+                  }}
                 >
                   <Text
                     style={[
-                      styles.filterChipText,
-                      selectedSubject === subject && styles.filterChipTextSelected,
+                      styles.levelChipText,
+                      selectedLevel === level && styles.levelChipTextSelected,
                     ]}
                   >
-                    {subject}
+                    {level}
                   </Text>
                 </TouchableOpacity>
               </React.Fragment>
             ))}
-          </ScrollView>
+          </View>
         </View>
 
-        <View style={styles.levelFilters}>
-          {levels.map((level, index) => (
-            <React.Fragment key={index}>
-              <TouchableOpacity
-                style={[
-                  styles.levelChip,
-                  selectedLevel === level && styles.levelChipSelected,
-                ]}
-                onPress={() => setSelectedLevel(level)}
-              >
-                <Text
-                  style={[
-                    styles.levelChipText,
-                    selectedLevel === level && styles.levelChipTextSelected,
-                  ]}
-                >
-                  {level}
-                </Text>
-              </TouchableOpacity>
-            </React.Fragment>
-          ))}
+        <View style={styles.filtersSection}>
+          <Text style={styles.filterLabel}>Subject</Text>
+          <TouchableOpacity
+            style={styles.subjectDropdownButton}
+            onPress={() => setShowSubjectDropdown(true)}
+          >
+            <Text style={styles.subjectDropdownButtonText}>
+              {selectedSubject || 'All Subjects'}
+            </Text>
+            <IconSymbol
+              ios_icon_name="chevron.down"
+              android_material_icon_name="expand-more"
+              size={20}
+              color={colors.text}
+            />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statValue}>{totalTasksCount}</Text>
             <Text style={styles.statLabel}>Total Tasks</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>8</Text>
+            <Text style={[styles.statValue, { color: colors.success }]}>
+              {completedTasksCount}
+            </Text>
             <Text style={styles.statLabel}>Completed</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>4</Text>
+            <Text style={[styles.statValue, { color: colors.warning }]}>
+              {remainingTasksCount}
+            </Text>
             <Text style={styles.statLabel}>Remaining</Text>
           </View>
         </View>
 
         <View style={styles.tasksSection}>
-          <Text style={commonStyles.subtitle}>Today&apos;s Tasks</Text>
-          <View style={styles.tasksList}>
-            {mockTasks.map((task, index) => (
-              <React.Fragment key={index}>
-                <View style={styles.taskCard}>
-                  <TouchableOpacity
-                    style={[
-                      styles.taskCheckbox,
-                      task.completed && styles.taskCheckboxCompleted,
-                    ]}
-                    onPress={() => console.log('Toggle task:', task.id)}
-                  >
-                    {task.completed && (
-                      <IconSymbol
-                        ios_icon_name="checkmark"
-                        android_material_icon_name="check"
-                        size={16}
-                        color="#FFFFFF"
-                      />
-                    )}
-                  </TouchableOpacity>
-                  
-                  <View style={styles.taskContent}>
-                    <Text
+          <Text style={commonStyles.subtitle}>
+            {viewMode === 'daily' ? "Today's Tasks" : "This Week's Tasks"}
+          </Text>
+          
+          {filteredTasks.length === 0 ? (
+            <View style={styles.emptyState}>
+              <IconSymbol
+                ios_icon_name="checkmark.circle"
+                android_material_icon_name="check-circle"
+                size={64}
+                color={colors.textSecondary}
+              />
+              <Text style={styles.emptyStateTitle}>No Tasks Found</Text>
+              <Text style={styles.emptyStateText}>
+                No tasks for {selectedSubject || 'any subject'} at {selectedLevel} level
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.tasksList}>
+              {filteredTasks.map((task, index) => (
+                <React.Fragment key={index}>
+                  <View style={styles.taskCard}>
+                    <TouchableOpacity
                       style={[
-                        styles.taskTitle,
-                        task.completed && styles.taskTitleCompleted,
+                        styles.taskCheckbox,
+                        task.completed && styles.taskCheckboxCompleted,
                       ]}
+                      onPress={() => toggleTaskCompletion(task.id)}
                     >
-                      {task.title}
-                    </Text>
-                    <View style={styles.taskMeta}>
-                      <View style={styles.taskBadge}>
-                        <Text style={styles.taskBadgeText}>{task.subject}</Text>
-                      </View>
-                      <View style={styles.taskBadge}>
-                        <Text style={styles.taskBadgeText}>{task.level}</Text>
-                      </View>
-                      <View style={styles.taskPoints}>
+                      {task.completed && (
                         <IconSymbol
-                          ios_icon_name="star.fill"
-                          android_material_icon_name="star"
-                          size={12}
-                          color={colors.highlight}
+                          ios_icon_name="checkmark"
+                          android_material_icon_name="check"
+                          size={16}
+                          color="#FFFFFF"
                         />
-                        <Text style={styles.taskPointsText}>{task.points}</Text>
+                      )}
+                    </TouchableOpacity>
+                    
+                    <View style={styles.taskContent}>
+                      <Text
+                        style={[
+                          styles.taskTitle,
+                          task.completed && styles.taskTitleCompleted,
+                        ]}
+                      >
+                        {task.title}
+                      </Text>
+                      <View style={styles.taskMeta}>
+                        <View style={styles.taskBadge}>
+                          <Text style={styles.taskBadgeText}>{task.subject}</Text>
+                        </View>
+                        <View style={styles.taskBadge}>
+                          <Text style={styles.taskBadgeText}>{task.level}</Text>
+                        </View>
+                        <View style={styles.taskPoints}>
+                          <IconSymbol
+                            ios_icon_name="star.fill"
+                            android_material_icon_name="star"
+                            size={12}
+                            color={colors.highlight}
+                          />
+                          <Text style={styles.taskPointsText}>{task.points}</Text>
+                        </View>
                       </View>
                     </View>
-                  </View>
 
-                  <View
-                    style={[
-                      styles.priorityIndicator,
-                      task.priority === 'high' && styles.priorityHigh,
-                      task.priority === 'medium' && styles.priorityMedium,
-                    ]}
-                  />
-                </View>
-              </React.Fragment>
-            ))}
-          </View>
+                    <View
+                      style={[
+                        styles.priorityIndicator,
+                        task.priority === 'high' && styles.priorityHigh,
+                        task.priority === 'medium' && styles.priorityMedium,
+                        task.priority === 'low' && styles.priorityLow,
+                      ]}
+                    />
+                  </View>
+                </React.Fragment>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.aiSuggestions}>
@@ -302,10 +443,12 @@ export default function TasksScreen() {
             <Text style={styles.aiTitle}>AI Suggestions</Text>
           </View>
           <Text style={styles.aiText}>
-            Based on your performance, we recommend focusing on Chemistry and completing 2 more flashcard reviews today.
+            Based on your performance, we recommend focusing on {selectedSubject || 'Mathematics'} and completing 2 more tasks today to maintain your streak.
           </Text>
         </View>
       </ScrollView>
+
+      {renderSubjectDropdown()}
     </View>
   );
 }
@@ -349,7 +492,7 @@ const styles = StyleSheet.create({
   viewModeContainer: {
     flexDirection: 'row',
     marginHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 20,
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 4,
@@ -371,58 +514,105 @@ const styles = StyleSheet.create({
   viewModeTextActive: {
     color: '#FFFFFF',
   },
-  filtersContainer: {
-    marginBottom: 12,
-  },
-  filterScroll: {
+  filtersSection: {
     paddingHorizontal: 20,
-    gap: 8,
+    marginBottom: 16,
   },
-  filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterChipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterChipText: {
+  filterLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
-  },
-  filterChipTextSelected: {
-    color: '#FFFFFF',
+    marginBottom: 10,
   },
   levelFilters: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 20,
     gap: 8,
   },
   levelChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
     backgroundColor: colors.card,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
   },
   levelChipSelected: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.secondary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   levelChipText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.text,
   },
   levelChipTextSelected: {
     color: '#FFFFFF',
+  },
+  subjectDropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  subjectDropdownButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  dropdownContainer: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    width: '100%',
+    maxHeight: '70%',
+    overflow: 'hidden',
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  dropdownScroll: {
+    maxHeight: 400,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  dropdownItemSelected: {
+    backgroundColor: colors.primary + '10',
+  },
+  dropdownItemText: {
+    fontSize: 15,
+    color: colors.text,
+  },
+  dropdownItemTextSelected: {
+    fontWeight: '600',
+    color: colors.primary,
   },
   statsRow: {
     flexDirection: 'row',
@@ -526,6 +716,25 @@ const styles = StyleSheet.create({
   },
   priorityMedium: {
     backgroundColor: colors.warning,
+  },
+  priorityLow: {
+    backgroundColor: colors.success,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   aiSuggestions: {
     marginHorizontal: 20,

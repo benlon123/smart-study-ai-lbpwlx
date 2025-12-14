@@ -146,7 +146,7 @@ export const generateMockLesson = (
     level,
     difficulty,
     description: `AI-generated lesson covering ${topic} in ${subject} at ${level} level (${difficulty} difficulty)`,
-    notes: generateMockNotes(subject, topic, level, difficulty),
+    notes: '',
     flashcards: [],
     examQuestions: [],
     quiz: undefined,
@@ -155,7 +155,7 @@ export const generateMockLesson = (
   };
 };
 
-const generateMockNotes = (subject: Subject, topic: string, level: Level, difficulty: Difficulty): string => {
+export const generateMockNotes = (subject: Subject, topic: string, level: Level, difficulty: Difficulty): string => {
   const notes = `# ${subject} - ${topic}
 ## ${level} Level (${difficulty} Difficulty)
 
@@ -207,7 +207,7 @@ To master ${topic}, follow this study plan:
 This lesson has introduced the essential aspects of ${topic} in ${subject} at ${level} level. The key to success is consistent practice and active engagement with the material. Make sure you understand each concept before moving forward.
 
 ## Next Steps
-Once you've thoroughly reviewed these notes, you can generate additional study materials including flashcards for spaced repetition, exam-style questions for practice, and interactive quizzes to test your understanding. Focus on mastering the core concepts first before moving to practice questions.`;
+Once you've thoroughly reviewed these notes, you can generate additional study materials including flashcards for spaced repetition and interactive quizzes to test your understanding. Focus on mastering the core concepts first before moving to practice questions.`;
 
   return notes;
 };
