@@ -74,6 +74,7 @@ export interface Lesson {
   subject: Subject;
   topic: string;
   book?: string; // For literature books like "A Christmas Carol"
+  selectedQuotes?: string[]; // Selected quotes for the lesson
   level: Level;
   difficulty: Difficulty;
   description: string;
@@ -164,6 +165,7 @@ export interface SubjectTopic {
   topics: string[];
   books?: string[]; // For subjects with specific books to study
   subSubjects?: string[]; // For BTEC subjects with sub-subjects
+  quotes?: Record<string, string[]>; // Quotes for each book
 }
 
 export interface AppNotification {

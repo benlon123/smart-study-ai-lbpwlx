@@ -29,7 +29,42 @@ export const subjectTopics: SubjectTopic[] = [
       'To Kill a Mockingbird',
       '1984',
       'The Handmaid\'s Tale'
-    ]
+    ],
+    quotes: {
+      'A Christmas Carol': [
+        '"God bless us, every one!" - Tiny Tim',
+        '"I will honour Christmas in my heart, and try to keep it all the year." - Scrooge',
+        '"No space of regret can make amends for one life\'s opportunity misused!" - Marley\'s Ghost',
+        '"Mankind was my business. The common welfare was my business." - Marley\'s Ghost',
+        '"I wear the chain I forged in life" - Marley\'s Ghost'
+      ],
+      'Macbeth': [
+        '"Fair is foul, and foul is fair" - The Witches',
+        '"Is this a dagger which I see before me?" - Macbeth',
+        '"Out, damned spot! Out, I say!" - Lady Macbeth',
+        '"Life\'s but a walking shadow" - Macbeth',
+        '"Double, double toil and trouble" - The Witches'
+      ],
+      'Romeo and Juliet': [
+        '"What\'s in a name? That which we call a rose by any other name would smell as sweet" - Juliet',
+        '"A plague o\' both your houses!" - Mercutio',
+        '"For never was a story of more woe than this of Juliet and her Romeo" - Prince',
+        '"These violent delights have violent ends" - Friar Lawrence',
+        '"O Romeo, Romeo! Wherefore art thou Romeo?" - Juliet'
+      ],
+      'An Inspector Calls': [
+        '"We are members of one body. We are responsible for each other." - Inspector Goole',
+        '"If men will not learn that lesson, then they will be taught it in fire and blood and anguish." - Inspector Goole',
+        '"Public men, Mr Birling, have responsibilities as well as privileges." - Inspector Goole',
+        '"One Eva Smith has gone - but there are millions and millions of Eva Smiths" - Inspector Goole'
+      ],
+      'Animal Farm': [
+        '"All animals are equal, but some animals are more equal than others" - Napoleon',
+        '"Four legs good, two legs bad" - The Sheep',
+        '"The creatures outside looked from pig to man, and from man to pig" - Narrator',
+        '"Man is the only creature that consumes without producing" - Old Major'
+      ]
+    }
   },
   {
     subject: 'Science',
@@ -158,7 +193,7 @@ export const subjectTopics: SubjectTopic[] = [
 ];
 
 // Enhanced content generation with specific context
-const getTopicSpecificContent = (subject: Subject, topic: string, book?: string): { concepts: string[], examples: string[], keyTerms: string[] } => {
+const getTopicSpecificContent = (subject: Subject, topic: string, book?: string, selectedQuotes?: string[]): { concepts: string[], examples: string[], keyTerms: string[], quotes?: string[] } => {
   const contentMap: Record<string, any> = {
     'English Language-Grammar': {
       concepts: ['sentence structure', 'parts of speech', 'punctuation rules', 'verb tenses', 'subject-verb agreement'],
@@ -216,20 +251,29 @@ const getTopicSpecificContent = (subject: Subject, topic: string, book?: string)
   if (book) {
     const bookKey = `${subject}-${book}`;
     if (contentMap[bookKey]) {
-      return contentMap[bookKey];
+      const content = contentMap[bookKey];
+      if (selectedQuotes && selectedQuotes.length > 0) {
+        content.quotes = selectedQuotes;
+      }
+      return content;
     }
   }
 
   const key = `${subject}-${topic}`;
   if (contentMap[key]) {
-    return contentMap[key];
+    const content = contentMap[key];
+    if (selectedQuotes && selectedQuotes.length > 0) {
+      content.quotes = selectedQuotes;
+    }
+    return content;
   }
 
   // Default content for topics not specifically mapped
   return {
     concepts: [`core principles of ${topic}`, `key theories in ${topic}`, `practical applications of ${topic}`],
     examples: [`real-world examples of ${topic}`, `case studies in ${topic}`, `problem-solving with ${topic}`],
-    keyTerms: [`fundamental ${topic} terminology`, `advanced ${topic} concepts`, `${topic} definitions`]
+    keyTerms: [`fundamental ${topic} terminology`, `advanced ${topic} concepts`, `${topic} definitions`],
+    quotes: selectedQuotes || []
   };
 };
 
@@ -239,7 +283,8 @@ export const generateMockLesson = (
   topic: string,
   level: Level,
   difficulty: Difficulty,
-  book?: string
+  book?: string,
+  selectedQuotes?: string[]
 ): Lesson => {
   const lessonId = `lesson-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   
@@ -250,10 +295,11 @@ export const generateMockLesson = (
     subject,
     topic,
     book,
+    selectedQuotes,
     level,
     difficulty,
     description: book 
-      ? `AI-generated lesson covering ${book} in ${subject} at ${level} level (${difficulty} difficulty)`
+      ? `AI-generated lesson covering ${book} in ${subject} at ${level} level (${difficulty} difficulty)${selectedQuotes && selectedQuotes.length > 0 ? ` with ${selectedQuotes.length} selected quotes` : ''}`
       : `AI-generated lesson covering ${topic} in ${subject} at ${level} level (${difficulty} difficulty)`,
     notes: '',
     flashcards: [],
@@ -264,11 +310,11 @@ export const generateMockLesson = (
   };
 };
 
-export const generateMockNotes = (subject: Subject, topic: string, level: Level, difficulty: Difficulty, book?: string): string => {
-  const content = getTopicSpecificContent(subject, topic, book);
+export const generateMockNotes = (subject: Subject, topic: string, level: Level, difficulty: Difficulty, book?: string, selectedQuotes?: string[]): string => {
+  const content = getTopicSpecificContent(subject, topic, book, selectedQuotes);
   const titleText = book ? `${book} - ${topic}` : topic;
   
-  const notes = `# ${titleText} in ${subject}
+  let notes = `# ${titleText} in ${subject}
 ## ${level} Level (${difficulty} Difficulty)
 
 ## Introduction
@@ -286,7 +332,22 @@ This is a crucial element of ${titleText} that you need to understand thoroughly
 Let's explore how these concepts work in practice:
 
 ${content.examples.map((example, i) => `**Example ${i + 1}: ${example}**
-${difficulty === 'Hard' ? 'Analyze this example critically, considering multiple perspectives and implications.' : difficulty === 'Normal' ? 'Study this example and think about how you could apply similar principles.' : 'This example demonstrates the basic application of the concept.'}`).join('\n\n')}
+${difficulty === 'Hard' ? 'Analyze this example critically, considering multiple perspectives and implications.' : difficulty === 'Normal' ? 'Study this example and think about how you could apply similar principles.' : 'This example demonstrates the basic application of the concept.'}`).join('\n\n')}`;
+
+  // Add quotes section if quotes are selected
+  if (content.quotes && content.quotes.length > 0) {
+    notes += `
+
+### Key Quotes for Analysis
+These selected quotes are essential for understanding ${book || titleText}:
+
+${content.quotes.map((quote, i) => `**Quote ${i + 1}:**
+${quote}
+
+This quote is significant because it demonstrates key themes and character development. ${difficulty === 'Hard' ? 'Analyze the language techniques, symbolism, and deeper meanings within this quote.' : difficulty === 'Normal' ? 'Consider how this quote relates to the overall themes and plot.' : 'Understand the literal meaning and basic context of this quote.'}`).join('\n\n')}`;
+  }
+
+  notes += `
 
 ### Essential Terminology
 Master these key terms for ${titleText}:
@@ -301,6 +362,7 @@ For ${level} success:
 - Understand and memorize key terminology
 - Practice explaining concepts in your own words
 - Work through examples regularly
+${content.quotes && content.quotes.length > 0 ? '- Analyze and memorize key quotes with their context\n- Practice integrating quotes into your written responses' : ''}
 - ${difficulty === 'Hard' ? 'Develop critical analysis and evaluation skills' : difficulty === 'Normal' ? 'Apply concepts to new situations' : 'Master the fundamental principles'}
 
 ## Summary
@@ -312,8 +374,8 @@ Generate flashcards to memorize key terms and concepts, then test your understan
   return notes;
 };
 
-export const generateMockFlashcards = (subject: Subject, topic: string, count: number, book?: string) => {
-  const content = getTopicSpecificContent(subject, topic, book);
+export const generateMockFlashcards = (subject: Subject, topic: string, count: number, book?: string, selectedQuotes?: string[]) => {
+  const content = getTopicSpecificContent(subject, topic, book, selectedQuotes);
   const flashcards = [];
   const titleText = book || topic;
   
@@ -341,11 +403,25 @@ export const generateMockFlashcards = (subject: Subject, topic: string, count: n
     });
   }
   
+  // Add quote-based flashcards if quotes are available
+  if (content.quotes && content.quotes.length > 0 && flashcards.length < count) {
+    for (let i = 0; i < Math.min(count - flashcards.length, content.quotes.length); i++) {
+      flashcards.push({
+        id: `flashcard-quote-${i}-${Date.now()}`,
+        question: `Analyze this quote from ${book}: "${content.quotes[i]}"`,
+        answer: `This quote is significant in ${book} because it reveals key themes and character development. Consider the context, language techniques, and how it relates to the overall narrative. This quote demonstrates ${content.concepts[i % content.concepts.length]}.`,
+        mastered: false,
+        lastReviewed: undefined,
+        nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
+    }
+  }
+  
   return flashcards;
 };
 
-export const generateMockExamQuestions = (subject: Subject, topic: string, difficulty: Difficulty, count: number, book?: string) => {
-  const content = getTopicSpecificContent(subject, topic, book);
+export const generateMockExamQuestions = (subject: Subject, topic: string, difficulty: Difficulty, count: number, book?: string, selectedQuotes?: string[]) => {
+  const content = getTopicSpecificContent(subject, topic, book, selectedQuotes);
   const questions = [];
   const titleText = book || topic;
   
@@ -353,6 +429,21 @@ export const generateMockExamQuestions = (subject: Subject, topic: string, diffi
     const questionType = i % 3;
     const concept = content.concepts[i % content.concepts.length];
     const example = content.examples[i % content.examples.length];
+    
+    // Add quote-based questions if quotes are available
+    if (content.quotes && content.quotes.length > 0 && i % 4 === 0) {
+      const quote = content.quotes[i % content.quotes.length];
+      questions.push({
+        id: `question-${i}-${Date.now()}`,
+        question: `Analyze the following quote from ${book}: "${quote}". What does this reveal about the themes and characters?`,
+        type: 'short-answer',
+        correctAnswer: `This quote from ${book} demonstrates ${concept} and reveals important aspects of the narrative. It shows ${example} and connects to the broader themes of the text. ${difficulty === 'Hard' ? 'A detailed analysis should include language techniques, symbolism, and contextual significance.' : 'Consider the literal meaning and its importance to the plot.'}`,
+        explanation: `Quote analysis is essential for ${subject} at ${level} level. This quote specifically relates to ${concept} and demonstrates key literary techniques used in ${book}.`,
+        hint: `Think about the context of this quote, who says it, and what it reveals about ${concept}.`,
+        marks: difficulty === 'Easy' ? 5 : difficulty === 'Normal' ? 8 : 12,
+      });
+      continue;
+    }
     
     if (questionType === 0) {
       // Single choice multiple choice
@@ -408,10 +499,10 @@ export const generateMockExamQuestions = (subject: Subject, topic: string, diffi
   return questions;
 };
 
-export const generateMockQuiz = (subject: Subject, topic: string, difficulty: Difficulty, lessonId: string, book?: string) => {
+export const generateMockQuiz = (subject: Subject, topic: string, difficulty: Difficulty, lessonId: string, book?: string, selectedQuotes?: string[]) => {
   return {
     id: `quiz-${lessonId}`,
-    questions: generateMockExamQuestions(subject, topic, difficulty, 10, book),
+    questions: generateMockExamQuestions(subject, topic, difficulty, 10, book, selectedQuotes),
     timeLimit: difficulty === 'Easy' ? 20 : difficulty === 'Normal' ? 30 : 45,
     completed: false,
   };

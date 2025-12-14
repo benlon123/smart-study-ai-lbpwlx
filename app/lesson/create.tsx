@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLesson } from '@/contexts/LessonContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Subject, Level, Difficulty } from '@/types/lesson';
@@ -25,6 +26,7 @@ const difficulties: Difficulty[] = ['Easy', 'Normal', 'Hard'];
 export default function CreateLessonScreen() {
   const router = useRouter();
   const { createLesson } = useLesson();
+  const { user } = useAuth();
   
   const [step, setStep] = useState<'level' | 'difficulty' | 'name' | 'subject'>('level');
   const [selectedLevel, setSelectedLevel] = useState<Level | null>(null);
@@ -33,6 +35,7 @@ export default function CreateLessonScreen() {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
+  const [selectedQuotes, setSelectedQuotes] = useState<string[]>([]);
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -52,6 +55,14 @@ export default function CreateLessonScreen() {
       return;
     }
     setShowSubjectModal(true);
+  };
+
+  const handleQuoteToggle = (quote: string) => {
+    if (selectedQuotes.includes(quote)) {
+      setSelectedQuotes(selectedQuotes.filter(q => q !== quote));
+    } else {
+      setSelectedQuotes([...selectedQuotes, quote]);
+    }
   };
 
   const handleSubjectTopicSelect = async () => {
@@ -79,6 +90,7 @@ export default function CreateLessonScreen() {
         selectedLevel,
         selectedDifficulty,
         selectedBook,
+        selectedQuotes,
       });
 
       const newLesson = await createLesson(
@@ -87,7 +99,8 @@ export default function CreateLessonScreen() {
         selectedTopic,
         selectedLevel!,
         selectedDifficulty!,
-        selectedBook || undefined
+        selectedBook || undefined,
+        selectedQuotes.length > 0 ? selectedQuotes : undefined
       );
       
       console.log('Lesson created successfully:', newLesson);
@@ -101,7 +114,7 @@ export default function CreateLessonScreen() {
       
       Alert.alert(
         'Lesson Created! 📚',
-        `Your lesson container has been created${selectedBook ? ` for ${selectedBook}` : ''}. You can now generate Notes, Flashcards, or Quiz inside the lesson.`,
+        `Your lesson container has been created${selectedBook ? ` for ${selectedBook}` : ''}${selectedQuotes.length > 0 ? ` with ${selectedQuotes.length} selected quotes` : ''}. You can now generate Notes, Flashcards, or Quiz inside the lesson.`,
         [{ text: 'OK' }]
       );
     } catch (error) {
@@ -216,6 +229,7 @@ export default function CreateLessonScreen() {
 
   const currentSubjectData = subjectTopics.find(item => item.subject === selectedSubject);
   const hasBooks = currentSubjectData?.books && currentSubjectData.books.length > 0;
+  const availableQuotes = selectedBook && currentSubjectData?.quotes ? currentSubjectData.quotes[selectedBook] : [];
 
   const renderSubjectModal = () => (
     <Modal
@@ -259,6 +273,7 @@ export default function CreateLessonScreen() {
                     setSelectedSubject(item.subject);
                     setSelectedTopic(null);
                     setSelectedBook(null);
+                    setSelectedQuotes([]);
                   }}
                 >
                   <Text
@@ -288,7 +303,10 @@ export default function CreateLessonScreen() {
                         styles.bookChip,
                         selectedBook === book && styles.bookChipSelected,
                       ]}
-                      onPress={() => setSelectedBook(book)}
+                      onPress={() => {
+                        setSelectedBook(book);
+                        setSelectedQuotes([]);
+                      }}
                     >
                       <Text
                         style={[
@@ -302,6 +320,58 @@ export default function CreateLessonScreen() {
                   </React.Fragment>
                 ))}
               </View>
+            </>
+          )}
+
+          {selectedBook && availableQuotes.length > 0 && (
+            <>
+              <Text style={[styles.modalSectionTitle, { marginTop: 32 }]}>Select Quotes (Optional)</Text>
+              <Text style={styles.modalSectionDescription}>
+                Choose specific quotes from {selectedBook} to focus on in your lesson
+              </Text>
+              <View style={styles.quotesContainer}>
+                {availableQuotes.map((quote, index) => (
+                  <React.Fragment key={index}>
+                    <TouchableOpacity
+                      style={[
+                        styles.quoteCard,
+                        selectedQuotes.includes(quote) && styles.quoteCardSelected,
+                      ]}
+                      onPress={() => handleQuoteToggle(quote)}
+                    >
+                      <View style={styles.quoteCheckbox}>
+                        {selectedQuotes.includes(quote) && (
+                          <IconSymbol
+                            ios_icon_name="checkmark"
+                            android_material_icon_name="check"
+                            size={16}
+                            color="#FFFFFF"
+                          />
+                        )}
+                      </View>
+                      <Text style={[
+                        styles.quoteText,
+                        selectedQuotes.includes(quote) && styles.quoteTextSelected
+                      ]}>
+                        {quote}
+                      </Text>
+                    </TouchableOpacity>
+                  </React.Fragment>
+                ))}
+              </View>
+              {selectedQuotes.length > 0 && (
+                <View style={styles.quotesSelectedBanner}>
+                  <IconSymbol
+                    ios_icon_name="checkmark.circle.fill"
+                    android_material_icon_name="check-circle"
+                    size={20}
+                    color={colors.success}
+                  />
+                  <Text style={styles.quotesSelectedText}>
+                    {selectedQuotes.length} quote{selectedQuotes.length !== 1 ? 's' : ''} selected
+                  </Text>
+                </View>
+              )}
             </>
           )}
 
@@ -371,6 +441,7 @@ export default function CreateLessonScreen() {
       <View style={styles.generatingSteps}>
         <GeneratingStep text="Creating lesson structure" />
         <GeneratingStep text="Saving lesson details" />
+        {selectedQuotes.length > 0 && <GeneratingStep text={`Preparing ${selectedQuotes.length} selected quotes`} />}
         <GeneratingStep text="Preparing for content generation" />
       </View>
       <View style={styles.generatingNote}>
@@ -670,6 +741,57 @@ const styles = StyleSheet.create({
   },
   bookChipTextSelected: {
     color: '#FFFFFF',
+  },
+  quotesContainer: {
+    gap: 12,
+  },
+  quoteCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: colors.card,
+    borderWidth: 2,
+    borderColor: colors.border,
+    gap: 12,
+  },
+  quoteCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
+  },
+  quoteCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
+  quoteText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text,
+  },
+  quoteTextSelected: {
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  quotesSelectedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: colors.success + '15',
+    gap: 8,
+    marginTop: 12,
+  },
+  quotesSelectedText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.success,
   },
   topicGrid: {
     flexDirection: 'row',

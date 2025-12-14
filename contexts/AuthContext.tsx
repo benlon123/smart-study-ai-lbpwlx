@@ -1,5 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Platform, Alert } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { User, PremiumGrant } from '@/types/lesson';
 
 interface AuthContextType {
@@ -7,12 +11,18 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isAdmin: boolean;
+  biometricAvailable: boolean;
+  biometricEnabled: boolean;
   signUp: (name: string, email: string, password: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  signInWithBiometric: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   updateStreak: () => void;
+  enableBiometric: () => Promise<void>;
+  disableBiometric: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,9 +57,12 @@ const isSameDay = (date1: Date, date2: Date): boolean => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
 
   useEffect(() => {
     checkSession();
+    checkBiometricAvailability();
   }, []);
 
   // Update streak when user logs in
@@ -59,9 +72,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user?.id]);
 
+  const checkBiometricAvailability = async () => {
+    try {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      setBiometricAvailable(compatible && enrolled);
+      
+      // Check if biometric is enabled for this user
+      const biometricEnabledStr = await SecureStore.getItemAsync('biometric_enabled');
+      setBiometricEnabled(biometricEnabledStr === 'true');
+    } catch (error) {
+      console.error('Error checking biometric availability:', error);
+    }
+  };
+
   const checkSession = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Check for saved credentials
+      const savedEmail = await SecureStore.getItemAsync('saved_email');
+      const savedPassword = await SecureStore.getItemAsync('saved_password');
+      
+      if (savedEmail && savedPassword) {
+        // Auto sign in with saved credentials
+        await signIn(savedEmail, savedPassword, false);
+      }
+      
       setIsLoading(false);
     } catch (error) {
       console.error('Error checking session:', error);
@@ -178,6 +213,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       mockUsers.push(newUser);
       setUser(newUser);
+      
+      // Save credentials securely
+      await SecureStore.setItemAsync('saved_email', email);
+      await SecureStore.setItemAsync('saved_password', password);
+      
       console.log('User signed up:', newUser);
     } catch (error) {
       console.error('Sign up error:', error);
@@ -185,7 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = true) => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -241,6 +281,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       setUser(existingUser);
+      
+      // Save credentials if remember me is enabled
+      if (rememberMe) {
+        await SecureStore.setItemAsync('saved_email', email);
+        await SecureStore.setItemAsync('saved_password', password);
+      }
+      
       console.log('User signed in:', existingUser);
     } catch (error) {
       console.error('Sign in error:', error);
@@ -248,10 +295,180 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithBiometric = async () => {
+    try {
+      if (!biometricAvailable) {
+        throw new Error('Biometric authentication is not available on this device');
+      }
+
+      if (!biometricEnabled) {
+        throw new Error('Biometric authentication is not enabled. Please enable it in settings.');
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Sign in to SmartStudy AI',
+        fallbackLabel: 'Use password',
+        cancelLabel: 'Cancel',
+      });
+
+      if (result.success) {
+        // Get saved credentials
+        const savedEmail = await SecureStore.getItemAsync('saved_email');
+        const savedPassword = await SecureStore.getItemAsync('saved_password');
+        
+        if (savedEmail && savedPassword) {
+          await signIn(savedEmail, savedPassword, false);
+        } else {
+          throw new Error('No saved credentials found');
+        }
+      } else {
+        throw new Error('Biometric authentication failed');
+      }
+    } catch (error) {
+      console.error('Biometric sign in error:', error);
+      throw error;
+    }
+  };
+
+  const signInWithApple = async () => {
+    try {
+      if (Platform.OS !== 'ios') {
+        throw new Error('Apple Sign-In is only available on iOS');
+      }
+
+      const isAvailable = await AppleAuthentication.isAvailableAsync();
+      if (!isAvailable) {
+        throw new Error('Apple Sign-In is not available on this device');
+      }
+
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      // Create or find user with Apple ID
+      const email = credential.email || `${credential.user}@appleid.com`;
+      const name = credential.fullName 
+        ? `${credential.fullName.givenName || ''} ${credential.fullName.familyName || ''}`.trim()
+        : 'Apple User';
+
+      let existingUser = mockUsers.find(u => u.email === email);
+      
+      if (!existingUser) {
+        existingUser = {
+          id: `user-${Date.now()}`,
+          name,
+          email,
+          isPremium: false,
+          lessons: [],
+          tasks: [],
+          streak: 1,
+          points: 0,
+          badges: [],
+          lastLoginDate: new Date(),
+          settings: {
+            accessibility: {
+              dyslexiaFont: false,
+              textSize: 'medium',
+              highContrast: false,
+              screenReader: false,
+              voiceCommands: false,
+            },
+            theme: {
+              mode: 'light',
+              customColors: false,
+              eyeStrainReduction: false,
+              studySounds: false,
+            },
+            notifications: {
+              taskAlerts: true,
+              examReminders: true,
+              aiStudyReminders: true,
+              dailyReminders: false,
+            },
+            study: {
+              defaultDifficulty: 'Normal',
+              defaultSubjects: [],
+              sessionLength: 25,
+              pomodoroEnabled: false,
+            },
+            gamification: {
+              showBadges: true,
+              showPoints: true,
+              showLeaderboard: true,
+            },
+          },
+          signupDate: new Date(),
+        };
+        mockUsers.push(existingUser);
+      }
+      
+      setUser(existingUser);
+      
+      // Save Apple ID credential
+      await SecureStore.setItemAsync('apple_user_id', credential.user);
+      
+      console.log('User signed in with Apple:', existingUser);
+    } catch (error: any) {
+      if (error.code === 'ERR_REQUEST_CANCELED') {
+        console.log('Apple Sign-In was canceled');
+      } else {
+        console.error('Apple Sign-In error:', error);
+        throw new Error('Failed to sign in with Apple. Please try again.');
+      }
+    }
+  };
+
+  const enableBiometric = async () => {
+    try {
+      if (!biometricAvailable) {
+        Alert.alert(
+          'Biometric Not Available',
+          'Biometric authentication is not available on this device or no biometric data is enrolled.'
+        );
+        return;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Enable biometric authentication',
+        fallbackLabel: 'Cancel',
+      });
+
+      if (result.success) {
+        await SecureStore.setItemAsync('biometric_enabled', 'true');
+        setBiometricEnabled(true);
+        Alert.alert('Success', 'Biometric authentication has been enabled');
+      }
+    } catch (error) {
+      console.error('Error enabling biometric:', error);
+      Alert.alert('Error', 'Failed to enable biometric authentication');
+    }
+  };
+
+  const disableBiometric = async () => {
+    try {
+      await SecureStore.deleteItemAsync('biometric_enabled');
+      setBiometricEnabled(false);
+      Alert.alert('Success', 'Biometric authentication has been disabled');
+    } catch (error) {
+      console.error('Error disabling biometric:', error);
+      Alert.alert('Error', 'Failed to disable biometric authentication');
+    }
+  };
+
   const signOut = async () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       setUser(null);
+      
+      // Clear saved credentials if biometric is not enabled
+      if (!biometricEnabled) {
+        await SecureStore.deleteItemAsync('saved_email');
+        await SecureStore.deleteItemAsync('saved_password');
+      }
+      
       console.log('User signed out');
     } catch (error) {
       console.error('Sign out error:', error);
@@ -287,12 +504,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         isAdmin,
+        biometricAvailable,
+        biometricEnabled,
         signUp,
         signIn,
+        signInWithBiometric,
+        signInWithApple,
         signOut,
         forgotPassword,
         updateUser,
         updateStreak,
+        enableBiometric,
+        disableBiometric,
       }}
     >
       {children}

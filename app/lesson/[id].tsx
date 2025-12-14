@@ -14,6 +14,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useLesson } from '@/contexts/LessonContext';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { ExamQuestion } from '@/types/lesson';
@@ -31,6 +32,7 @@ export default function LessonDetailScreen() {
   const { id } = useLocalSearchParams();
   const { getLessonById, generateNotes, generateFlashcards, generateQuiz } = useLesson();
   const { settings } = useSettings();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('notes');
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -97,6 +99,19 @@ export default function LessonDetailScreen() {
   };
 
   const handleGenerateFlashcards = async () => {
+    // Check premium status
+    if (!user?.isPremium) {
+      Alert.alert(
+        'Premium Feature 🌟',
+        'Flashcards are a premium feature. Upgrade to premium to generate flashcards with spaced repetition.',
+        [
+          { text: 'Maybe Later', style: 'cancel' },
+          { text: 'Learn More', onPress: () => console.log('Navigate to premium') }
+        ]
+      );
+      return;
+    }
+
     setIsGenerating(true);
     setGeneratingType('flashcards');
     try {
@@ -246,6 +261,7 @@ export default function LessonDetailScreen() {
           </Text>
           <Text style={[styles.emptyStateDescription, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
             Generate comprehensive notes (400-500 words) covering key concepts for this lesson
+            {lesson.selectedQuotes && lesson.selectedQuotes.length > 0 && ` including analysis of ${lesson.selectedQuotes.length} selected quotes`}
           </Text>
 
           {!showSubtopicInput ? (
@@ -363,7 +379,22 @@ export default function LessonDetailScreen() {
           </Text>
           <Text style={[styles.emptyStateDescription, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
             Generate flashcards to start practicing with spaced repetition
+            {lesson.selectedQuotes && lesson.selectedQuotes.length > 0 && ` including quote analysis`}
           </Text>
+
+          {!user?.isPremium && (
+            <View style={styles.premiumBanner}>
+              <IconSymbol
+                ios_icon_name="star.fill"
+                android_material_icon_name="star"
+                size={24}
+                color={colors.highlight}
+              />
+              <Text style={styles.premiumBannerText}>
+                Flashcards are a Premium Feature
+              </Text>
+            </View>
+          )}
 
           {!showFlashcardOptions ? (
             <TouchableOpacity
@@ -840,6 +871,7 @@ export default function LessonDetailScreen() {
           </Text>
           <Text style={[styles.emptyStateDescription, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
             Generate a quiz with exam-style questions to test your knowledge
+            {lesson.selectedQuotes && lesson.selectedQuotes.length > 0 && ` including quote analysis`}
           </Text>
           <TouchableOpacity
             style={[buttonStyles.primary, styles.generateContentButton]}
@@ -948,6 +980,16 @@ export default function LessonDetailScreen() {
                 {lesson.difficulty}
               </Text>
             </View>
+            {lesson.selectedQuotes && lesson.selectedQuotes.length > 0 && (
+              <View style={[styles.headerBadge, { backgroundColor: colors.highlight + '30' }]}>
+                <Text style={[
+                  styles.headerBadgeText,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  {lesson.selectedQuotes.length} Quotes
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -1003,7 +1045,12 @@ export default function LessonDetailScreen() {
           >
             Flashcards
           </Text>
-          {lesson.flashcards.length === 0 && (
+          {!user?.isPremium && (
+            <View style={[styles.tabBadge, { backgroundColor: colors.highlight }]}>
+              <Text style={styles.tabBadgeText}>Premium</Text>
+            </View>
+          )}
+          {lesson.flashcards.length === 0 && user?.isPremium && (
             <View style={styles.tabBadge}>
               <Text style={styles.tabBadgeText}>New</Text>
             </View>
@@ -1089,6 +1136,7 @@ const styles = StyleSheet.create({
   headerBadges: {
     flexDirection: 'row',
     gap: 8,
+    flexWrap: 'wrap',
   },
   headerBadge: {
     paddingHorizontal: 10,
@@ -1172,6 +1220,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
+  },
+  premiumBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: colors.highlight + '15',
+    marginBottom: 16,
+  },
+  premiumBannerText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
   },
   generateContentButton: {
     flexDirection: 'row',
