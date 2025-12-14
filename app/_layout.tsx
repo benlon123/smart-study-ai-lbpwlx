@@ -1,138 +1,50 @@
 
-import "react-native-reanimated";
-import React, { useEffect } from "react";
-import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { SystemBars } from "react-native-edge-to-edge";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme, Alert } from "react-native";
-import { useNetworkState } from "expo-network";
-import {
-  DarkTheme,
-  DefaultTheme,
-  Theme,
-  ThemeProvider,
-} from "@react-navigation/native";
-import { StatusBar } from "expo-status-bar";
-import { WidgetProvider } from "@/contexts/WidgetContext";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { LessonProvider } from "@/contexts/LessonContext";
-import { colors } from "@/styles/commonStyles";
-
-SplashScreen.preventAutoHideAsync();
-
-export const unstable_settings = {
-  initialRouteName: "(tabs)",
-};
+import { Stack } from 'expo-router';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { LessonProvider } from '@/contexts/LessonContext';
+import { SettingsProvider } from '@/contexts/SettingsContext';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const networkState = useNetworkState();
-  const [loaded] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-  });
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  React.useEffect(() => {
-    if (
-      !networkState.isConnected &&
-      networkState.isInternetReachable === false
-    ) {
-      Alert.alert(
-        "🔌 You are offline",
-        "You can keep using the app! Your changes will be saved locally and synced when you are back online."
-      );
-    }
-  }, [networkState.isConnected, networkState.isInternetReachable]);
-
-  if (!loaded) {
-    return null;
-  }
-
-  const CustomLightTheme: Theme = {
-    ...DefaultTheme,
-    dark: false,
-    colors: {
-      primary: colors.primary,
-      background: colors.background,
-      card: colors.card,
-      text: colors.text,
-      border: colors.border,
-      notification: colors.accent,
-    },
-  };
-
-  const CustomDarkTheme: Theme = {
-    ...DarkTheme,
-    colors: {
-      primary: colors.primary,
-      background: '#1A1A2E',
-      card: '#16213E',
-      text: '#EAEAEA',
-      border: '#0F3460',
-      notification: colors.accent,
-    },
-  };
-
   return (
-    <>
-      <StatusBar style="auto" animated />
-      <ThemeProvider
-        value={colorScheme === "dark" ? CustomDarkTheme : CustomLightTheme}
-      >
-        <AuthProvider>
-          <LessonProvider>
-            <WidgetProvider>
-              <GestureHandlerRootView>
-                <Stack>
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen 
-                    name="auth/sign-up" 
-                    options={{ 
-                      headerShown: false,
-                      presentation: 'modal'
-                    }} 
-                  />
-                  <Stack.Screen 
-                    name="auth/sign-in" 
-                    options={{ 
-                      headerShown: false,
-                      presentation: 'modal'
-                    }} 
-                  />
-                  <Stack.Screen 
-                    name="auth/forgot-password" 
-                    options={{ 
-                      headerShown: false,
-                      presentation: 'modal'
-                    }} 
-                  />
-                  <Stack.Screen 
-                    name="lesson/create" 
-                    options={{ 
-                      headerShown: false,
-                      presentation: 'modal'
-                    }} 
-                  />
-                  <Stack.Screen 
-                    name="lesson/[id]" 
-                    options={{ 
-                      headerShown: false
-                    }} 
-                  />
-                </Stack>
-                <SystemBars style={"auto"} />
-              </GestureHandlerRootView>
-            </WidgetProvider>
-          </LessonProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </>
+    <AuthProvider>
+      <SettingsProvider>
+        <LessonProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'default',
+            }}
+          >
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="auth/sign-in" />
+            <Stack.Screen name="auth/sign-up" />
+            <Stack.Screen name="auth/forgot-password" />
+            <Stack.Screen name="lesson/[id]" />
+            <Stack.Screen name="lesson/create" />
+            <Stack.Screen
+              name="modal"
+              options={{
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+              }}
+            />
+            <Stack.Screen
+              name="formsheet"
+              options={{
+                presentation: 'formSheet',
+                sheetAllowedDetents: [0.5, 0.9],
+              }}
+            />
+            <Stack.Screen
+              name="transparent-modal"
+              options={{
+                presentation: 'transparentModal',
+                animation: 'fade',
+              }}
+            />
+          </Stack>
+        </LessonProvider>
+      </SettingsProvider>
+    </AuthProvider>
   );
 }

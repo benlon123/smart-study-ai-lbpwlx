@@ -12,16 +12,14 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, isAuthenticated, signOut } = useAuth();
-  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
-  const [darkMode, setDarkMode] = React.useState(false);
-  const [dyslexiaFont, setDyslexiaFont] = React.useState(false);
-  const [highContrast, setHighContrast] = React.useState(false);
+  const { settings, toggleDyslexiaFont, toggleDarkMode, toggleHighContrast, toggleNotifications } = useSettings();
 
   const handleSignOut = () => {
     Alert.alert(
@@ -68,23 +66,40 @@ export default function SettingsScreen() {
     );
   }
 
+  const containerStyle = settings.theme.mode === 'dark'
+    ? [commonStyles.container, styles.darkContainer]
+    : commonStyles.container;
+
+  const textColor = settings.theme.mode === 'dark' ? '#FFFFFF' : colors.text;
+  const cardBg = settings.theme.mode === 'dark' ? '#1a1a1a' : colors.card;
+
   return (
-    <View style={commonStyles.container}>
+    <View style={containerStyle}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Settings</Text>
-          <Text style={commonStyles.textSecondary}>
+          <Text style={[
+            styles.headerTitle,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: textColor }
+          ]}>
+            Settings
+          </Text>
+          <Text style={[
+            commonStyles.textSecondary,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: textColor }
+          ]}>
             Customize your learning experience
           </Text>
         </View>
 
         {!user?.isPremium && (
           <TouchableOpacity
-            style={styles.premiumBanner}
+            style={[styles.premiumBanner, { backgroundColor: cardBg }]}
             onPress={handleUpgradeToPremium}
           >
             <IconSymbol
@@ -94,8 +109,17 @@ export default function SettingsScreen() {
               color={colors.highlight}
             />
             <View style={styles.premiumBannerText}>
-              <Text style={styles.premiumBannerTitle}>Upgrade to Premium</Text>
-              <Text style={styles.premiumBannerSubtitle}>
+              <Text style={[
+                styles.premiumBannerTitle,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { color: textColor }
+              ]}>
+                Upgrade to Premium
+              </Text>
+              <Text style={[
+                styles.premiumBannerSubtitle,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+              ]}>
                 Unlock all features & unlimited lessons
               </Text>
             </View>
@@ -103,15 +127,21 @@ export default function SettingsScreen() {
               ios_icon_name="chevron.right"
               android_material_icon_name="chevron-right"
               size={20}
-              color={colors.text}
+              color={textColor}
             />
           </TouchableOpacity>
         )}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Accessibility</Text>
+          <Text style={[
+            styles.sectionTitle,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: textColor }
+          ]}>
+            Accessibility
+          </Text>
           
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: cardBg }]}>
             <View style={styles.settingLeft}>
               <IconSymbol
                 ios_icon_name="textformat"
@@ -120,20 +150,31 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Dyslexia-Friendly Font</Text>
-                <Text style={styles.settingSubtitle}>Easier to read font style</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Dyslexia-Friendly Font
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Easier to read font style
+                </Text>
               </View>
             </View>
             <Switch
-              value={dyslexiaFont}
-              onValueChange={setDyslexiaFont}
+              value={settings.accessibility.dyslexiaFont}
+              onValueChange={toggleDyslexiaFont}
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor="#FFFFFF"
             />
           </View>
 
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Text Size', 'Text size adjustment coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -144,8 +185,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Text Size</Text>
-                <Text style={styles.settingSubtitle}>Medium</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Text Size
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  {settings.accessibility.textSize}
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -156,7 +208,7 @@ export default function SettingsScreen() {
             />
           </TouchableOpacity>
 
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: cardBg }]}>
             <View style={styles.settingLeft}>
               <IconSymbol
                 ios_icon_name="circle.lefthalf.filled"
@@ -165,20 +217,31 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>High Contrast</Text>
-                <Text style={styles.settingSubtitle}>Improve visibility</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  High Contrast
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Improve visibility
+                </Text>
               </View>
             </View>
             <Switch
-              value={highContrast}
-              onValueChange={setHighContrast}
+              value={settings.accessibility.highContrast}
+              onValueChange={toggleHighContrast}
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor="#FFFFFF"
             />
           </View>
 
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Voice Commands', 'Voice commands coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -189,8 +252,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Voice Commands</Text>
-                <Text style={styles.settingSubtitle}>Control with your voice</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Voice Commands
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Control with your voice
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -203,9 +277,15 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Theme</Text>
+          <Text style={[
+            styles.sectionTitle,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: textColor }
+          ]}>
+            Theme
+          </Text>
           
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: cardBg }]}>
             <View style={styles.settingLeft}>
               <IconSymbol
                 ios_icon_name="moon.fill"
@@ -214,20 +294,31 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Dark Mode</Text>
-                <Text style={styles.settingSubtitle}>Reduce eye strain</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Dark Mode
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Reduce eye strain
+                </Text>
               </View>
             </View>
             <Switch
-              value={darkMode}
-              onValueChange={setDarkMode}
+              value={settings.theme.mode === 'dark'}
+              onValueChange={toggleDarkMode}
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor="#FFFFFF"
             />
           </View>
 
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Custom Colors', 'Color customization coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -238,8 +329,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Custom Colors</Text>
-                <Text style={styles.settingSubtitle}>Personalize your theme</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Custom Colors
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Personalize your theme
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -251,7 +353,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Study Sounds', 'Study sounds coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -262,8 +364,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Study Sounds</Text>
-                <Text style={styles.settingSubtitle}>Background music & ambience</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Study Sounds
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Background music & ambience
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -276,9 +389,15 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
+          <Text style={[
+            styles.sectionTitle,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: textColor }
+          ]}>
+            Notifications
+          </Text>
           
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: cardBg }]}>
             <View style={styles.settingLeft}>
               <IconSymbol
                 ios_icon_name="bell.fill"
@@ -287,22 +406,30 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Task Alerts</Text>
-                <Text style={styles.settingSubtitle}>Remind me about tasks</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Task Alerts
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Remind me about tasks
+                </Text>
               </View>
             </View>
             <Switch
-              value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
+              value={settings.notifications.taskAlerts}
+              onValueChange={() => toggleNotifications('taskAlerts')}
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor="#FFFFFF"
             />
           </View>
 
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={() => Alert.alert('Exam Reminders', 'Exam reminders coming soon!')}
-          >
+          <View style={[styles.settingItem, { backgroundColor: cardBg }]}>
             <View style={styles.settingLeft}>
               <IconSymbol
                 ios_icon_name="calendar"
@@ -311,22 +438,30 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Exam Reminders</Text>
-                <Text style={styles.settingSubtitle}>Never miss an exam</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Exam Reminders
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Never miss an exam
+                </Text>
               </View>
             </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color={colors.textSecondary}
+            <Switch
+              value={settings.notifications.examReminders}
+              onValueChange={() => toggleNotifications('examReminders')}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#FFFFFF"
             />
-          </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity
-            style={styles.settingItem}
-            onPress={() => Alert.alert('AI Study Reminders', 'AI reminders coming soon!')}
-          >
+          <View style={[styles.settingItem, { backgroundColor: cardBg }]}>
             <View style={styles.settingLeft}>
               <IconSymbol
                 ios_icon_name="sparkles"
@@ -335,24 +470,41 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>AI Study Reminders</Text>
-                <Text style={styles.settingSubtitle}>Smart study suggestions</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  AI Study Reminders
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Smart study suggestions
+                </Text>
               </View>
             </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color={colors.textSecondary}
+            <Switch
+              value={settings.notifications.aiStudyReminders}
+              onValueChange={() => toggleNotifications('aiStudyReminders')}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor="#FFFFFF"
             />
-          </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Study Preferences</Text>
+          <Text style={[
+            styles.sectionTitle,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: textColor }
+          ]}>
+            Study Preferences
+          </Text>
           
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Default Difficulty', 'Difficulty settings coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -363,8 +515,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Default Difficulty</Text>
-                <Text style={styles.settingSubtitle}>Normal</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Default Difficulty
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  {settings.study.defaultDifficulty}
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -376,7 +539,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Session Length', 'Session settings coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -387,8 +550,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Session Length</Text>
-                <Text style={styles.settingSubtitle}>25 minutes (Pomodoro)</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Session Length
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  {settings.study.sessionLength} minutes (Pomodoro)
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -400,7 +574,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Default Subjects', 'Subject preferences coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -411,8 +585,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Default Subjects</Text>
-                <Text style={styles.settingSubtitle}>Choose your main subjects</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Default Subjects
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Choose your main subjects
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -425,10 +610,16 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Gamification</Text>
+          <Text style={[
+            styles.sectionTitle,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: textColor }
+          ]}>
+            Gamification
+          </Text>
           
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Badges', 'Badge settings coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -439,8 +630,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Badges & Achievements</Text>
-                <Text style={styles.settingSubtitle}>Show my progress</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Badges & Achievements
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Show my progress
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -452,7 +654,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Avatar', 'Avatar customization coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -463,8 +665,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Avatar</Text>
-                <Text style={styles.settingSubtitle}>Customize your profile</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Avatar
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Customize your profile
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -477,10 +690,16 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={[
+            styles.sectionTitle,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            { color: textColor }
+          ]}>
+            Account
+          </Text>
           
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Edit Profile', 'Profile editing coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -491,8 +710,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Edit Profile</Text>
-                <Text style={styles.settingSubtitle}>Update your information</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Edit Profile
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Update your information
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -504,7 +734,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Security', 'Security settings coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -515,8 +745,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Security</Text>
-                <Text style={styles.settingSubtitle}>Password & 2FA</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Security
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Password & 2FA
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -528,7 +769,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.settingItem}
+            style={[styles.settingItem, { backgroundColor: cardBg }]}
             onPress={() => Alert.alert('Backup & Restore', 'Backup settings coming soon!')}
           >
             <View style={styles.settingLeft}>
@@ -539,8 +780,19 @@ export default function SettingsScreen() {
                 color={colors.primary}
               />
               <View style={styles.settingText}>
-                <Text style={styles.settingTitle}>Backup & Restore</Text>
-                <Text style={styles.settingSubtitle}>Cloud sync</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  { color: textColor }
+                ]}>
+                  Backup & Restore
+                </Text>
+                <Text style={[
+                  styles.settingSubtitle,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Cloud sync
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -552,7 +804,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.settingItem, styles.signOutItem]}
+            style={[styles.settingItem, styles.signOutItem, { backgroundColor: cardBg }]}
             onPress={handleSignOut}
           >
             <View style={styles.settingLeft}>
@@ -563,7 +815,13 @@ export default function SettingsScreen() {
                 color={colors.error}
               />
               <View style={styles.settingText}>
-                <Text style={[styles.settingTitle, styles.signOutText]}>Sign Out</Text>
+                <Text style={[
+                  styles.settingTitle,
+                  styles.signOutText,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  Sign Out
+                </Text>
               </View>
             </View>
             <IconSymbol
@@ -576,8 +834,18 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>SmartStudy AI v1.0.0</Text>
-          <Text style={styles.footerText}>Made with ❤️ for students</Text>
+          <Text style={[
+            styles.footerText,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+          ]}>
+            SmartStudy AI v1.0.0
+          </Text>
+          <Text style={[
+            styles.footerText,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+          ]}>
+            Made with ❤️ for students
+          </Text>
         </View>
       </ScrollView>
     </View>
@@ -591,6 +859,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: Platform.OS === 'android' ? 48 : 0,
     paddingBottom: 120,
+  },
+  darkContainer: {
+    backgroundColor: '#121212',
   },
   header: {
     paddingHorizontal: 20,
@@ -690,5 +961,8 @@ const styles = StyleSheet.create({
   },
   notAuthText: {
     textAlign: 'center',
+  },
+  dyslexiaFont: {
+    fontFamily: 'OpenDyslexic',
   },
 });

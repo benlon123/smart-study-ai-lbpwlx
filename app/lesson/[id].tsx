@@ -9,30 +9,57 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useLesson } from '@/contexts/LessonContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { ExamQuestion } from '@/types/lesson';
 
 type TabType = 'notes' | 'flashcards' | 'quiz';
+
+interface QuizAnswer {
+  questionId: string;
+  selectedAnswer: string;
+  isCorrect: boolean;
+}
 
 export default function LessonDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { getLessonById, generateNotes, generateFlashcards, generateQuiz } = useLesson();
+  const { settings } = useSettings();
   const [activeTab, setActiveTab] = useState<TabType>('notes');
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingType, setGeneratingType] = useState<'notes' | 'flashcards' | 'quiz' | null>(null);
+  
+  // Notes subtopic state
+  const [notesSubtopic, setNotesSubtopic] = useState('');
+  const [showSubtopicInput, setShowSubtopicInput] = useState(false);
+  
+  // Flashcard count selection
+  const [flashcardCount, setFlashcardCount] = useState<10 | 20 | 30>(10);
+  const [showFlashcardOptions, setShowFlashcardOptions] = useState(false);
+  
+  // Quiz state
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState<QuizAnswer[]>([]);
+  const [selectedAnswer, setSelectedAnswer] = useState<string>('');
+  const [showResults, setShowResults] = useState(false);
 
   const lesson = getLessonById(id as string);
 
   if (!lesson) {
     return (
       <View style={[commonStyles.container, commonStyles.centerContent]}>
-        <Text style={commonStyles.text}>Lesson not found</Text>
+        <Text style={[commonStyles.text, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+          Lesson not found
+        </Text>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.linkText}>Go Back</Text>
         </TouchableOpacity>
@@ -41,17 +68,25 @@ export default function LessonDetailScreen() {
   }
 
   const currentFlashcard = lesson.flashcards[currentFlashcardIndex];
+  const currentQuestion = lesson.quiz?.questions[currentQuestionIndex];
 
   const handleGenerateNotes = async () => {
+    if (showSubtopicInput && !notesSubtopic.trim()) {
+      Alert.alert('Subtopic Required', 'Please enter a specific subtopic for your notes.');
+      return;
+    }
+
     setIsGenerating(true);
     setGeneratingType('notes');
     try {
-      await generateNotes(lesson.id);
+      await generateNotes(lesson.id, notesSubtopic.trim() || undefined);
       Alert.alert(
         'Notes Generated! 📝',
-        'Your lesson notes (400-500 words) have been created successfully.',
+        `Your lesson notes (400-500 words) ${notesSubtopic ? `on "${notesSubtopic}"` : ''} have been created successfully.`,
         [{ text: 'OK' }]
       );
+      setShowSubtopicInput(false);
+      setNotesSubtopic('');
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to generate notes');
     } finally {
@@ -64,13 +99,14 @@ export default function LessonDetailScreen() {
     setIsGenerating(true);
     setGeneratingType('flashcards');
     try {
-      await generateFlashcards(lesson.id);
+      await generateFlashcards(lesson.id, flashcardCount);
       Alert.alert(
         'Flashcards Generated! 🎴',
-        'Your flashcards have been created successfully.',
+        `${flashcardCount} flashcards have been created successfully.`,
         [{ text: 'OK' }]
       );
       setActiveTab('flashcards');
+      setShowFlashcardOptions(false);
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to generate flashcards');
     } finally {
@@ -112,6 +148,57 @@ export default function LessonDetailScreen() {
     }
   };
 
+  const handleStartQuiz = () => {
+    setQuizStarted(true);
+    setCurrentQuestionIndex(0);
+    setQuizAnswers([]);
+    setSelectedAnswer('');
+    setShowResults(false);
+  };
+
+  const handleSelectAnswer = (answer: string) => {
+    setSelectedAnswer(answer);
+  };
+
+  const handleSubmitAnswer = () => {
+    if (!selectedAnswer || !currentQuestion) return;
+
+    const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+    const newAnswer: QuizAnswer = {
+      questionId: currentQuestion.id,
+      selectedAnswer,
+      isCorrect,
+    };
+
+    const updatedAnswers = [...quizAnswers, newAnswer];
+    setQuizAnswers(updatedAnswers);
+
+    if (currentQuestionIndex < (lesson.quiz?.questions.length || 0) - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setSelectedAnswer('');
+    } else {
+      setShowResults(true);
+    }
+  };
+
+  const handleRestartQuiz = () => {
+    setQuizStarted(false);
+    setCurrentQuestionIndex(0);
+    setQuizAnswers([]);
+    setSelectedAnswer('');
+    setShowResults(false);
+  };
+
+  const calculateScore = () => {
+    const correctAnswers = quizAnswers.filter(a => a.isCorrect).length;
+    const totalQuestions = lesson.quiz?.questions.length || 0;
+    return {
+      correct: correctAnswers,
+      total: totalQuestions,
+      percentage: Math.round((correctAnswers / totalQuestions) * 100),
+    };
+  };
+
   const renderNotes = () => {
     if (!lesson.notes) {
       return (
@@ -122,29 +209,94 @@ export default function LessonDetailScreen() {
             size={64}
             color={colors.textSecondary}
           />
-          <Text style={styles.emptyStateTitle}>No Notes Yet</Text>
-          <Text style={styles.emptyStateDescription}>
+          <Text style={[styles.emptyStateTitle, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+            No Notes Yet
+          </Text>
+          <Text style={[styles.emptyStateDescription, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
             Generate comprehensive notes (400-500 words) covering key concepts for this lesson
           </Text>
-          <TouchableOpacity
-            style={[buttonStyles.primary, styles.generateContentButton]}
-            onPress={handleGenerateNotes}
-            disabled={isGenerating}
-          >
-            {isGenerating && generatingType === 'notes' ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
+
+          {!showSubtopicInput ? (
+            <View style={styles.notesButtonContainer}>
+              <TouchableOpacity
+                style={[buttonStyles.primary, styles.generateContentButton]}
+                onPress={() => setShowSubtopicInput(true)}
+              >
                 <IconSymbol
-                  ios_icon_name="sparkles"
-                  android_material_icon_name="auto-awesome"
+                  ios_icon_name="text.badge.plus"
+                  android_material_icon_name="edit-note"
                   size={18}
                   color="#FFFFFF"
                 />
-                <Text style={buttonStyles.textWhite}>Generate Notes</Text>
-              </>
-            )}
-          </TouchableOpacity>
+                <Text style={buttonStyles.textWhite}>Specify Subtopic</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[buttonStyles.outline, styles.generateContentButton]}
+                onPress={handleGenerateNotes}
+                disabled={isGenerating}
+              >
+                {isGenerating && generatingType === 'notes' ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <IconSymbol
+                      ios_icon_name="sparkles"
+                      android_material_icon_name="auto-awesome"
+                      size={18}
+                      color={colors.primary}
+                    />
+                    <Text style={[buttonStyles.text, { color: colors.primary }]}>
+                      Generate General Notes
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.subtopicInputContainer}>
+              <Text style={[styles.subtopicLabel, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                Enter a specific subtopic within {lesson.topic}:
+              </Text>
+              <Text style={[styles.subtopicExample, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                Example: "ATP system", "muscular responses to exercise", "photosynthesis process"
+              </Text>
+              <TextInput
+                style={[
+                  commonStyles.input,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                  settings.accessibility.highContrast && styles.highContrastInput
+                ]}
+                placeholder="e.g., ATP system"
+                placeholderTextColor={colors.textSecondary}
+                value={notesSubtopic}
+                onChangeText={setNotesSubtopic}
+                autoFocus
+              />
+              <View style={styles.subtopicButtons}>
+                <TouchableOpacity
+                  style={[buttonStyles.outline, { flex: 1 }]}
+                  onPress={() => {
+                    setShowSubtopicInput(false);
+                    setNotesSubtopic('');
+                  }}
+                >
+                  <Text style={[buttonStyles.text, { color: colors.primary }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[buttonStyles.primary, { flex: 1 }]}
+                  onPress={handleGenerateNotes}
+                  disabled={isGenerating}
+                >
+                  {isGenerating && generatingType === 'notes' ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={buttonStyles.textWhite}>Generate</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
       );
     }
@@ -152,7 +304,13 @@ export default function LessonDetailScreen() {
     return (
       <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
         <View style={styles.notesContainer}>
-          <Text style={styles.notesText}>{lesson.notes}</Text>
+          <Text style={[
+            styles.notesText,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            settings.accessibility.highContrast && styles.highContrastText
+          ]}>
+            {lesson.notes}
+          </Text>
         </View>
       </ScrollView>
     );
@@ -168,29 +326,101 @@ export default function LessonDetailScreen() {
             size={64}
             color={colors.textSecondary}
           />
-          <Text style={styles.emptyStateTitle}>No Flashcards Yet</Text>
-          <Text style={styles.emptyStateDescription}>
+          <Text style={[styles.emptyStateTitle, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+            No Flashcards Yet
+          </Text>
+          <Text style={[styles.emptyStateDescription, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
             Generate flashcards to start practicing with spaced repetition
           </Text>
-          <TouchableOpacity
-            style={[buttonStyles.primary, styles.generateContentButton]}
-            onPress={handleGenerateFlashcards}
-            disabled={isGenerating}
-          >
-            {isGenerating && generatingType === 'flashcards' ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <IconSymbol
-                  ios_icon_name="sparkles"
-                  android_material_icon_name="auto-awesome"
-                  size={18}
-                  color="#FFFFFF"
-                />
-                <Text style={buttonStyles.textWhite}>Generate Flashcards</Text>
-              </>
-            )}
-          </TouchableOpacity>
+
+          {!showFlashcardOptions ? (
+            <TouchableOpacity
+              style={[buttonStyles.primary, styles.generateContentButton]}
+              onPress={() => setShowFlashcardOptions(true)}
+            >
+              <IconSymbol
+                ios_icon_name="sparkles"
+                android_material_icon_name="auto-awesome"
+                size={18}
+                color="#FFFFFF"
+              />
+              <Text style={buttonStyles.textWhite}>Generate Flashcards</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.flashcardOptionsContainer}>
+              <Text style={[styles.flashcardOptionsTitle, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                How many flashcards would you like?
+              </Text>
+              
+              <TouchableOpacity
+                style={[
+                  styles.flashcardOptionButton,
+                  flashcardCount === 10 && styles.flashcardOptionButtonSelected
+                ]}
+                onPress={() => setFlashcardCount(10)}
+              >
+                <Text style={[
+                  styles.flashcardOptionText,
+                  flashcardCount === 10 && styles.flashcardOptionTextSelected,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  10 Flashcards
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.flashcardOptionButton,
+                  flashcardCount === 20 && styles.flashcardOptionButtonSelected
+                ]}
+                onPress={() => setFlashcardCount(20)}
+              >
+                <Text style={[
+                  styles.flashcardOptionText,
+                  flashcardCount === 20 && styles.flashcardOptionTextSelected,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  20 Flashcards
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.flashcardOptionButton,
+                  flashcardCount === 30 && styles.flashcardOptionButtonSelected
+                ]}
+                onPress={() => setFlashcardCount(30)}
+              >
+                <Text style={[
+                  styles.flashcardOptionText,
+                  flashcardCount === 30 && styles.flashcardOptionTextSelected,
+                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                ]}>
+                  30 Flashcards
+                </Text>
+              </TouchableOpacity>
+
+              <View style={styles.flashcardOptionsButtons}>
+                <TouchableOpacity
+                  style={[buttonStyles.outline, { flex: 1 }]}
+                  onPress={() => setShowFlashcardOptions(false)}
+                >
+                  <Text style={[buttonStyles.text, { color: colors.primary }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[buttonStyles.primary, { flex: 1 }]}
+                  onPress={handleGenerateFlashcards}
+                  disabled={isGenerating}
+                >
+                  {isGenerating && generatingType === 'flashcards' ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={buttonStyles.textWhite}>Generate</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
       );
     }
@@ -199,21 +429,31 @@ export default function LessonDetailScreen() {
       <View style={styles.tabContent}>
         <View style={styles.flashcardContainer}>
           <View style={styles.flashcardCounter}>
-            <Text style={styles.flashcardCounterText}>
+            <Text style={[styles.flashcardCounterText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
               {currentFlashcardIndex + 1} / {lesson.flashcards.length}
             </Text>
           </View>
 
           <TouchableOpacity
-            style={styles.flashcard}
+            style={[
+              styles.flashcard,
+              settings.accessibility.highContrast && styles.highContrastCard
+            ]}
             onPress={() => setIsFlipped(!isFlipped)}
             activeOpacity={0.9}
           >
             <View style={styles.flashcardContent}>
-              <Text style={styles.flashcardLabel}>
+              <Text style={[
+                styles.flashcardLabel,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+              ]}>
                 {isFlipped ? 'Answer' : 'Question'}
               </Text>
-              <Text style={styles.flashcardText}>
+              <Text style={[
+                styles.flashcardText,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                settings.accessibility.highContrast && styles.highContrastText
+              ]}>
                 {isFlipped ? currentFlashcard.answer : currentFlashcard.question}
               </Text>
             </View>
@@ -224,7 +464,9 @@ export default function LessonDetailScreen() {
                 size={16}
                 color={colors.textSecondary}
               />
-              <Text style={styles.flashcardHintText}>Tap to flip</Text>
+              <Text style={[styles.flashcardHintText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                Tap to flip
+              </Text>
             </View>
           </TouchableOpacity>
 
@@ -271,6 +513,250 @@ export default function LessonDetailScreen() {
     );
   };
 
+  const renderQuizResults = () => {
+    const score = calculateScore();
+    const didWell = score.percentage >= 70;
+
+    return (
+      <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.resultsContainer}>
+          <View style={[styles.resultsHeader, didWell ? styles.resultsHeaderSuccess : styles.resultsHeaderWarning]}>
+            <IconSymbol
+              ios_icon_name={didWell ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"}
+              android_material_icon_name={didWell ? "check-circle" : "warning"}
+              size={64}
+              color={didWell ? colors.success : colors.warning}
+            />
+            <Text style={[styles.resultsTitle, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+              {didWell ? 'Great Job! 🎉' : 'Keep Practicing! 💪'}
+            </Text>
+            <Text style={[styles.resultsScore, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+              {score.correct} / {score.total} ({score.percentage}%)
+            </Text>
+            <Text style={[styles.resultsMessage, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+              {didWell 
+                ? 'Excellent work! You have a strong understanding of this topic.'
+                : 'Don\'t worry! Review the explanations below and try again.'}
+            </Text>
+          </View>
+
+          <View style={styles.resultsQuestions}>
+            <Text style={[styles.resultsQuestionsTitle, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+              Question Review
+            </Text>
+            
+            {lesson.quiz?.questions.map((question, index) => {
+              const userAnswer = quizAnswers.find(a => a.questionId === question.id);
+              const isCorrect = userAnswer?.isCorrect || false;
+
+              return (
+                <View key={index} style={[
+                  styles.resultQuestionCard,
+                  isCorrect ? styles.resultQuestionCardCorrect : styles.resultQuestionCardIncorrect
+                ]}>
+                  <View style={styles.resultQuestionHeader}>
+                    <Text style={[styles.resultQuestionNumber, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                      Question {index + 1}
+                    </Text>
+                    <View style={[styles.resultBadge, isCorrect ? styles.resultBadgeCorrect : styles.resultBadgeIncorrect]}>
+                      <IconSymbol
+                        ios_icon_name={isCorrect ? "checkmark.circle.fill" : "xmark.circle.fill"}
+                        android_material_icon_name={isCorrect ? "check-circle" : "cancel"}
+                        size={16}
+                        color="#FFFFFF"
+                      />
+                      <Text style={[styles.resultBadgeText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                        {isCorrect ? 'Correct' : 'Incorrect'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.resultQuestionText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                    {question.question}
+                  </Text>
+
+                  {question.type === 'multiple-choice' && question.options && (
+                    <View style={styles.resultOptionsContainer}>
+                      {question.options.map((option, optionIndex) => {
+                        const isUserAnswer = option === userAnswer?.selectedAnswer;
+                        const isCorrectAnswer = option === question.correctAnswer;
+
+                        return (
+                          <View
+                            key={optionIndex}
+                            style={[
+                              styles.resultOption,
+                              isCorrectAnswer && styles.resultOptionCorrect,
+                              isUserAnswer && !isCorrect && styles.resultOptionWrong,
+                            ]}
+                          >
+                            <Text style={[
+                              styles.resultOptionText,
+                              settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                              (isCorrectAnswer || (isUserAnswer && !isCorrect)) && styles.resultOptionTextBold
+                            ]}>
+                              {option}
+                            </Text>
+                            {isCorrectAnswer && (
+                              <IconSymbol
+                                ios_icon_name="checkmark.circle.fill"
+                                android_material_icon_name="check-circle"
+                                size={20}
+                                color={colors.success}
+                              />
+                            )}
+                            {isUserAnswer && !isCorrect && (
+                              <IconSymbol
+                                ios_icon_name="xmark.circle.fill"
+                                android_material_icon_name="cancel"
+                                size={20}
+                                color={colors.error}
+                              />
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+
+                  <View style={styles.resultExplanationContainer}>
+                    <Text style={[styles.resultExplanationLabel, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                      {isCorrect ? 'Why this is correct:' : 'Why the correct answer is:'}
+                    </Text>
+                    <Text style={[styles.resultExplanationText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                      {question.explanation}
+                    </Text>
+                    {!isCorrect && (
+                      <View style={styles.correctAnswerBox}>
+                        <Text style={[styles.correctAnswerLabel, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                          Correct Answer:
+                        </Text>
+                        <Text style={[styles.correctAnswerText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                          {question.correctAnswer}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity
+            style={[buttonStyles.primary, styles.restartButton]}
+            onPress={handleRestartQuiz}
+          >
+            <IconSymbol
+              ios_icon_name="arrow.clockwise"
+              android_material_icon_name="refresh"
+              size={18}
+              color="#FFFFFF"
+            />
+            <Text style={buttonStyles.textWhite}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  const renderQuizQuestion = () => {
+    if (!currentQuestion) return null;
+
+    return (
+      <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.quizQuestionContainer}>
+          <View style={styles.quizProgress}>
+            <Text style={[styles.quizProgressText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+              Question {currentQuestionIndex + 1} of {lesson.quiz?.questions.length}
+            </Text>
+            <View style={styles.quizProgressBar}>
+              <View 
+                style={[
+                  styles.quizProgressBarFill,
+                  { width: `${((currentQuestionIndex + 1) / (lesson.quiz?.questions.length || 1)) * 100}%` }
+                ]}
+              />
+            </View>
+          </View>
+
+          <View style={styles.quizQuestionCard}>
+            <View style={styles.quizQuestionHeader}>
+              <View style={styles.marksBadge}>
+                <Text style={[styles.marksText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                  {currentQuestion.marks} marks
+                </Text>
+              </View>
+            </View>
+
+            <Text style={[styles.quizQuestionText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+              {currentQuestion.question}
+            </Text>
+
+            {currentQuestion.type === 'multiple-choice' && currentQuestion.options && (
+              <View style={styles.quizOptionsContainer}>
+                {currentQuestion.options.map((option, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.quizOption,
+                      selectedAnswer === option && styles.quizOptionSelected,
+                      settings.accessibility.highContrast && styles.highContrastCard
+                    ]}
+                    onPress={() => handleSelectAnswer(option)}
+                  >
+                    <View style={[
+                      styles.quizOptionRadio,
+                      selectedAnswer === option && styles.quizOptionRadioSelected
+                    ]}>
+                      {selectedAnswer === option && (
+                        <View style={styles.quizOptionRadioInner} />
+                      )}
+                    </View>
+                    <Text style={[
+                      styles.quizOptionText,
+                      selectedAnswer === option && styles.quizOptionTextSelected,
+                      settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+                    ]}>
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {currentQuestion.hint && (
+              <View style={styles.hintContainer}>
+                <IconSymbol
+                  ios_icon_name="lightbulb.fill"
+                  android_material_icon_name="lightbulb"
+                  size={16}
+                  color={colors.highlight}
+                />
+                <Text style={[styles.hintText, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+                  {currentQuestion.hint}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={[
+              buttonStyles.primary,
+              styles.submitAnswerButton,
+              !selectedAnswer && styles.submitAnswerButtonDisabled
+            ]}
+            onPress={handleSubmitAnswer}
+            disabled={!selectedAnswer}
+          >
+            <Text style={buttonStyles.textWhite}>
+              {currentQuestionIndex < (lesson.quiz?.questions.length || 0) - 1 ? 'Next Question' : 'Finish Quiz'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    );
+  };
+
   const renderQuiz = () => {
     if (!lesson.quiz) {
       return (
@@ -281,8 +767,10 @@ export default function LessonDetailScreen() {
             size={64}
             color={colors.textSecondary}
           />
-          <Text style={styles.emptyStateTitle}>No Quiz Yet</Text>
-          <Text style={styles.emptyStateDescription}>
+          <Text style={[styles.emptyStateTitle, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+            No Quiz Yet
+          </Text>
+          <Text style={[styles.emptyStateDescription, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
             Generate a quiz with exam-style questions to test your knowledge
           </Text>
           <TouchableOpacity
@@ -308,112 +796,98 @@ export default function LessonDetailScreen() {
       );
     }
 
-    return (
-      <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.questionsContainer}>
-          <View style={styles.quizHeader}>
-            <Text style={styles.quizHeaderTitle}>Quiz Questions</Text>
-            <View style={styles.quizHeaderBadge}>
-              <Text style={styles.quizHeaderBadgeText}>
-                {lesson.quiz.questions.length} questions
-              </Text>
-            </View>
-          </View>
+    if (showResults) {
+      return renderQuizResults();
+    }
 
-          {lesson.quiz.questions.map((question, index) => (
-            <React.Fragment key={index}>
-              <View style={styles.questionCard}>
-                <View style={styles.questionHeader}>
-                  <Text style={styles.questionNumber}>Question {index + 1}</Text>
-                  <View style={styles.marksBadge}>
-                    <Text style={styles.marksText}>{question.marks} marks</Text>
-                  </View>
-                </View>
-                <Text style={styles.questionText}>{question.question}</Text>
-                
-                {question.type === 'multiple-choice' && question.options && (
-                  <View style={styles.optionsContainer}>
-                    {question.options.map((option, optionIndex) => (
-                      <React.Fragment key={optionIndex}>
-                        <View
-                          style={[
-                            styles.optionItem,
-                            option === question.correctAnswer && styles.optionItemCorrect,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.optionText,
-                              option === question.correctAnswer && styles.optionTextCorrect,
-                            ]}
-                          >
-                            {option}
-                          </Text>
-                          {option === question.correctAnswer && (
-                            <IconSymbol
-                              ios_icon_name="checkmark.circle.fill"
-                              android_material_icon_name="check-circle"
-                              size={20}
-                              color={colors.success}
-                            />
-                          )}
-                        </View>
-                      </React.Fragment>
-                    ))}
-                  </View>
-                )}
-
-                {question.hint && (
-                  <View style={styles.hintContainer}>
-                    <IconSymbol
-                      ios_icon_name="lightbulb.fill"
-                      android_material_icon_name="lightbulb"
-                      size={16}
-                      color={colors.highlight}
-                    />
-                    <Text style={styles.hintText}>{question.hint}</Text>
-                  </View>
-                )}
-
-                <View style={styles.explanationContainer}>
-                  <Text style={styles.explanationLabel}>Explanation:</Text>
-                  <Text style={styles.explanationText}>{question.explanation}</Text>
-                </View>
-              </View>
-            </React.Fragment>
-          ))}
+    if (!quizStarted) {
+      return (
+        <View style={[styles.tabContent, styles.emptyStateContainer]}>
+          <IconSymbol
+            ios_icon_name="play.circle.fill"
+            android_material_icon_name="play-circle"
+            size={64}
+            color={colors.primary}
+          />
+          <Text style={[styles.emptyStateTitle, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+            Ready to Start?
+          </Text>
+          <Text style={[styles.emptyStateDescription, settings.accessibility.dyslexiaFont && styles.dyslexiaFont]}>
+            Test your knowledge with {lesson.quiz.questions.length} questions
+          </Text>
+          <TouchableOpacity
+            style={[buttonStyles.primary, styles.generateContentButton]}
+            onPress={handleStartQuiz}
+          >
+            <IconSymbol
+              ios_icon_name="play.fill"
+              android_material_icon_name="play-arrow"
+              size={18}
+              color="#FFFFFF"
+            />
+            <Text style={buttonStyles.textWhite}>Start Quiz</Text>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
-    );
+      );
+    }
+
+    return renderQuizQuestion();
   };
 
+  const containerStyle = settings.theme.mode === 'dark' 
+    ? [commonStyles.container, styles.darkContainer]
+    : commonStyles.container;
+
   return (
-    <View style={commonStyles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+    <View style={containerStyle}>
+      <View style={[
+        styles.header,
+        settings.theme.mode === 'dark' && styles.darkHeader
+      ]}>
+        <TouchableOpacity style={[
+          styles.backButton,
+          settings.theme.mode === 'dark' && styles.darkCard
+        ]} onPress={() => router.back()}>
           <IconSymbol
             ios_icon_name="chevron.left"
             android_material_icon_name="arrow-back"
             size={24}
-            color={colors.text}
+            color={settings.theme.mode === 'dark' ? '#FFFFFF' : colors.text}
           />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
+          <Text style={[
+            styles.headerTitle,
+            settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+            settings.theme.mode === 'dark' && styles.darkText
+          ]} numberOfLines={1}>
             {lesson.name}
           </Text>
           <View style={styles.headerBadges}>
             <View style={styles.headerBadge}>
-              <Text style={styles.headerBadgeText}>{lesson.level}</Text>
+              <Text style={[
+                styles.headerBadgeText,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+              ]}>
+                {lesson.level}
+              </Text>
             </View>
             <View style={styles.headerBadge}>
-              <Text style={styles.headerBadgeText}>{lesson.difficulty}</Text>
+              <Text style={[
+                styles.headerBadgeText,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont
+              ]}>
+                {lesson.difficulty}
+              </Text>
             </View>
           </View>
         </View>
       </View>
 
-      <View style={styles.tabBar}>
+      <View style={[
+        styles.tabBar,
+        settings.theme.mode === 'dark' && styles.darkCard
+      ]}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'notes' && styles.tabActive]}
           onPress={() => setActiveTab('notes')}
@@ -428,6 +902,8 @@ export default function LessonDetailScreen() {
             style={[
               styles.tabText,
               activeTab === 'notes' && styles.tabTextActive,
+              settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+              settings.theme.mode === 'dark' && styles.darkText
             ]}
           >
             Notes
@@ -453,6 +929,8 @@ export default function LessonDetailScreen() {
             style={[
               styles.tabText,
               activeTab === 'flashcards' && styles.tabTextActive,
+              settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+              settings.theme.mode === 'dark' && styles.darkText
             ]}
           >
             Flashcards
@@ -478,6 +956,8 @@ export default function LessonDetailScreen() {
             style={[
               styles.tabText,
               activeTab === 'quiz' && styles.tabTextActive,
+              settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+              settings.theme.mode === 'dark' && styles.darkText
             ]}
           >
             Quiz
@@ -507,6 +987,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     gap: 12,
+  },
+  darkHeader: {
+    backgroundColor: '#1a1a1a',
+    borderBottomColor: '#333333',
+  },
+  darkContainer: {
+    backgroundColor: '#121212',
+  },
+  darkCard: {
+    backgroundColor: '#1a1a1a',
+  },
+  darkText: {
+    color: '#FFFFFF',
   },
   backButton: {
     width: 40,
@@ -619,6 +1112,70 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 24,
   },
+  notesButtonContainer: {
+    width: '100%',
+    gap: 12,
+  },
+  subtopicInputContainer: {
+    width: '100%',
+    padding: 20,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    gap: 12,
+  },
+  subtopicLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  subtopicExample: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  subtopicButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  flashcardOptionsContainer: {
+    width: '100%',
+    padding: 20,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    gap: 12,
+  },
+  flashcardOptionsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  flashcardOptionButton: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+  },
+  flashcardOptionButtonSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
+  },
+  flashcardOptionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  flashcardOptionTextSelected: {
+    color: colors.primary,
+  },
+  flashcardOptionsButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
   flashcardContainer: {
     flex: 1,
     padding: 20,
@@ -689,47 +1246,39 @@ const styles = StyleSheet.create({
   flashcardButtonDisabled: {
     opacity: 0.3,
   },
-  questionsContainer: {
+  quizQuestionContainer: {
     padding: 20,
   },
-  quizHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+  quizProgress: {
+    marginBottom: 24,
   },
-  quizHeaderTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  quizHeaderBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: colors.primary + '20',
-  },
-  quizHeaderBadgeText: {
-    fontSize: 12,
+  quizProgressText: {
+    fontSize: 14,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.textSecondary,
+    marginBottom: 8,
   },
-  questionCard: {
+  quizProgressBar: {
+    height: 8,
+    backgroundColor: colors.border,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  quizProgressBarFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 4,
+  },
+  quizQuestionCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  questionHeader: {
+  quizQuestionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
     marginBottom: 12,
-  },
-  questionNumber: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
   },
   marksBadge: {
     paddingHorizontal: 10,
@@ -742,37 +1291,56 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
-  questionText: {
-    fontSize: 15,
-    lineHeight: 22,
+  quizQuestionText: {
+    fontSize: 16,
+    lineHeight: 24,
     color: colors.text,
-    marginBottom: 16,
+    fontWeight: '600',
+    marginBottom: 20,
   },
-  optionsContainer: {
-    marginBottom: 16,
-    gap: 8,
+  quizOptionsContainer: {
+    gap: 12,
   },
-  optionItem: {
+  quizOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
     backgroundColor: colors.background,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
+    gap: 12,
   },
-  optionItemCorrect: {
-    backgroundColor: colors.success + '10',
-    borderColor: colors.success,
+  quizOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
   },
-  optionText: {
+  quizOptionRadio: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quizOptionRadioSelected: {
+    borderColor: colors.primary,
+  },
+  quizOptionRadioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+  },
+  quizOptionText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text,
   },
-  optionTextCorrect: {
+  quizOptionTextSelected: {
     fontWeight: '600',
+    color: colors.primary,
   },
   hintContainer: {
     flexDirection: 'row',
@@ -780,7 +1348,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     backgroundColor: colors.highlight + '10',
-    marginBottom: 12,
+    marginTop: 16,
     gap: 8,
   },
   hintText: {
@@ -790,26 +1358,193 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontStyle: 'italic',
   },
-  explanationContainer: {
+  submitAnswerButton: {
+    marginTop: 8,
+  },
+  submitAnswerButtonDisabled: {
+    opacity: 0.5,
+  },
+  resultsContainer: {
+    padding: 20,
+  },
+  resultsHeader: {
+    alignItems: 'center',
+    padding: 24,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  resultsHeaderSuccess: {
+    backgroundColor: colors.success + '15',
+  },
+  resultsHeaderWarning: {
+    backgroundColor: colors.warning + '15',
+  },
+  resultsTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  resultsScore: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: colors.primary,
+    marginBottom: 8,
+  },
+  resultsMessage: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  resultsQuestions: {
+    marginBottom: 24,
+  },
+  resultsQuestionsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  resultQuestionCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+  },
+  resultQuestionCardCorrect: {
+    borderLeftColor: colors.success,
+  },
+  resultQuestionCardIncorrect: {
+    borderLeftColor: colors.error,
+  },
+  resultQuestionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  resultQuestionNumber: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  resultBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  resultBadgeCorrect: {
+    backgroundColor: colors.success,
+  },
+  resultBadgeIncorrect: {
+    backgroundColor: colors.error,
+  },
+  resultBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  resultQuestionText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.text,
+    marginBottom: 16,
+  },
+  resultOptionsContainer: {
+    marginBottom: 16,
+    gap: 8,
+  },
+  resultOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  resultOptionCorrect: {
+    backgroundColor: colors.success + '10',
+    borderColor: colors.success,
+  },
+  resultOptionWrong: {
+    backgroundColor: colors.error + '10',
+    borderColor: colors.error,
+  },
+  resultOptionText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.text,
+  },
+  resultOptionTextBold: {
+    fontWeight: '600',
+  },
+  resultExplanationContainer: {
     padding: 12,
     borderRadius: 8,
     backgroundColor: colors.background,
   },
-  explanationLabel: {
+  resultExplanationLabel: {
     fontSize: 12,
     fontWeight: '700',
     color: colors.primary,
     marginBottom: 6,
   },
-  explanationText: {
+  resultExplanationText: {
     fontSize: 13,
     lineHeight: 20,
     color: colors.textSecondary,
+  },
+  correctAnswerBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: colors.success + '10',
+    borderLeftWidth: 3,
+    borderLeftColor: colors.success,
+  },
+  correctAnswerLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.success,
+    marginBottom: 4,
+  },
+  correctAnswerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  restartButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   linkText: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.primary,
     marginTop: 16,
+  },
+  dyslexiaFont: {
+    fontFamily: 'OpenDyslexic',
+  },
+  highContrastText: {
+    color: '#000000',
+  },
+  highContrastInput: {
+    borderWidth: 2,
+    borderColor: '#000000',
+  },
+  highContrastCard: {
+    borderWidth: 2,
+    borderColor: '#000000',
   },
 });

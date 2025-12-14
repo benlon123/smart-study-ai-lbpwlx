@@ -19,8 +19,8 @@ interface LessonContextType {
     level: Level,
     difficulty: Difficulty
   ) => Promise<Lesson>;
-  generateNotes: (lessonId: string) => Promise<void>;
-  generateFlashcards: (lessonId: string) => Promise<void>;
+  generateNotes: (lessonId: string, subtopic?: string) => Promise<void>;
+  generateFlashcards: (lessonId: string, count: 10 | 20 | 30) => Promise<void>;
   generateQuiz: (lessonId: string) => Promise<void>;
   deleteLesson: (lessonId: string) => void;
   updateLessonProgress: (lessonId: string, progress: number) => void;
@@ -62,9 +62,9 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const generateNotes = async (lessonId: string): Promise<void> => {
+  const generateNotes = async (lessonId: string, subtopic?: string): Promise<void> => {
     try {
-      console.log('Generating notes for lesson:', lessonId);
+      console.log('Generating notes for lesson:', lessonId, 'Subtopic:', subtopic);
       
       const lesson = lessons.find(l => l.id === lessonId);
       if (!lesson) {
@@ -77,7 +77,12 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       await new Promise(resolve => setTimeout(resolve, 2500));
       
-      const notes = generateMockNotes(lesson.subject, lesson.topic, lesson.level, lesson.difficulty);
+      const notes = generateMockNotes(
+        lesson.subject, 
+        subtopic || lesson.topic, 
+        lesson.level, 
+        lesson.difficulty
+      );
 
       setLessons(prev =>
         prev.map(l =>
@@ -94,9 +99,9 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const generateFlashcards = async (lessonId: string): Promise<void> => {
+  const generateFlashcards = async (lessonId: string, count: 10 | 20 | 30): Promise<void> => {
     try {
-      console.log('Generating flashcards for lesson:', lessonId);
+      console.log('Generating', count, 'flashcards for lesson:', lessonId);
       
       const lesson = lessons.find(l => l.id === lessonId);
       if (!lesson) {
@@ -109,7 +114,7 @@ export const LessonProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const flashcards = generateMockFlashcards(lesson.subject, lesson.topic, 8);
+      const flashcards = generateMockFlashcards(lesson.subject, lesson.topic, count);
 
       setLessons(prev =>
         prev.map(l =>
