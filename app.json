@@ -16,14 +16,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ben1321.smartstudyai",
-      "usesAppleSignIn": true,
       "buildNumber": "1",
       "icon": "./assets/images/final_quest_240x240.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSFaceIDUsageDescription": "Allow SmartStudy AI to use Face ID for secure and convenient sign-in.",
-        "NSCalendarsUsageDescription": "Allow SmartStudy AI to access your calendar to schedule revision sessions and track study events.",
-        "NSRemindersUsageDescription": "Allow SmartStudy AI to create reminders for your revision schedule.",
         "CFBundleVersion": "1",
         "CFBundleShortVersionString": "1.0.0"
       }
@@ -37,15 +33,7 @@
       "edgeToEdgeEnabled": true,
       "package": "com.ben1321.smartstudyai",
       "versionCode": 1,
-      "permissions": [
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT",
-        "READ_CALENDAR",
-        "WRITE_CALENDAR",
-        "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM",
-        "POST_NOTIFICATIONS"
-      ]
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -54,34 +42,7 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser",
-      [
-        "expo-local-authentication",
-        {
-          "faceIDPermission": "Allow SmartStudy AI to use Face ID for secure and convenient sign-in."
-        }
-      ],
-      [
-        "expo-secure-store",
-        {
-          "faceIDPermission": "Allow SmartStudy AI to access your Face ID biometric data for secure credential storage."
-        }
-      ],
-      "expo-apple-authentication",
-      [
-        "expo-calendar",
-        {
-          "calendarPermission": "Allow SmartStudy AI to access your calendar to schedule revision sessions and track study events."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/natively-dark.png",
-          "color": "#6366F1",
-          "defaultChannel": "default"
-        }
-      ]
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
