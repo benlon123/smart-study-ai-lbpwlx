@@ -160,7 +160,18 @@ export const subjectTopics: SubjectTopic[] = [
   },
   {
     subject: 'BTEC Sport',
-    topics: ['Fitness Training', 'Sports Coaching', 'Sports Psychology', 'Sports Development', 'Sports Leadership'],
+    topics: [
+      'Anatomy & Physiology',
+      'Fitness Testing',
+      'Training Methods',
+      'Sports Psychology',
+      'Sports Nutrition',
+      'Sports Injuries',
+      'Sports Coaching',
+      'Sports Development',
+      'Sports Leadership',
+      'Sports Performance Analysis'
+    ],
     subSubjects: [
       'Anatomy & Physiology',
       'Fitness Testing',
@@ -244,6 +255,46 @@ const getTopicSpecificContent = (subject: Subject, topic: string, book?: string,
       concepts: ['fitness components', 'testing protocols', 'data collection and analysis', 'validity and reliability'],
       examples: ['VO2 max testing', 'sit and reach flexibility test', 'multi-stage fitness test'],
       keyTerms: ['cardiovascular endurance', 'muscular strength', 'flexibility', 'body composition', 'agility', 'power']
+    },
+    'BTEC Sport-Training Methods': {
+      concepts: ['interval training', 'plyometric exercises', 'periodization', 'progressive overload', 'specificity principle'],
+      examples: ['HIIT workouts for endurance', 'box jumps for explosive power', 'macrocycle training plans'],
+      keyTerms: ['interval training', 'plyometrics', 'periodization', 'overload', 'specificity', 'adaptation', 'recovery']
+    },
+    'BTEC Sport-Sports Psychology': {
+      concepts: ['motivation theories', 'anxiety management', 'mental imagery', 'goal setting', 'self-confidence'],
+      examples: ['intrinsic vs extrinsic motivation', 'visualization techniques', 'SMART goal setting'],
+      keyTerms: ['motivation', 'anxiety', 'arousal', 'imagery', 'self-efficacy', 'attribution', 'cohesion']
+    },
+    'BTEC Sport-Sports Nutrition': {
+      concepts: ['macronutrients', 'hydration strategies', 'pre-competition nutrition', 'recovery nutrition', 'supplements'],
+      examples: ['carb loading before endurance events', 'protein timing for muscle recovery', 'electrolyte replacement'],
+      keyTerms: ['carbohydrates', 'proteins', 'fats', 'hydration', 'glycogen', 'amino acids', 'electrolytes']
+    },
+    'BTEC Sport-Sports Injuries': {
+      concepts: ['injury prevention', 'acute vs chronic injuries', 'RICE protocol', 'rehabilitation', 'injury assessment'],
+      examples: ['ACL tear prevention exercises', 'treating ankle sprains', 'return to play protocols'],
+      keyTerms: ['acute injury', 'chronic injury', 'RICE', 'rehabilitation', 'prevention', 'assessment', 'recovery']
+    },
+    'BTEC Sport-Sports Coaching': {
+      concepts: ['coaching styles', 'session planning', 'feedback techniques', 'skill development', 'coaching ethics'],
+      examples: ['autocratic vs democratic coaching', 'progressive skill drills', 'constructive feedback methods'],
+      keyTerms: ['coaching style', 'session plan', 'feedback', 'demonstration', 'progression', 'ethics', 'communication']
+    },
+    'BTEC Sport-Sports Development': {
+      concepts: ['sports participation', 'community programs', 'talent identification', 'sports policy', 'funding'],
+      examples: ['grassroots development programs', 'talent pathways', 'Sport England initiatives'],
+      keyTerms: ['participation', 'development', 'talent identification', 'policy', 'funding', 'community', 'pathways']
+    },
+    'BTEC Sport-Sports Leadership': {
+      concepts: ['leadership styles', 'team management', 'communication skills', 'decision making', 'motivation'],
+      examples: ['transformational leadership in sports', 'conflict resolution', 'team building activities'],
+      keyTerms: ['leadership', 'management', 'communication', 'decision making', 'motivation', 'teamwork', 'responsibility']
+    },
+    'BTEC Sport-Sports Performance Analysis': {
+      concepts: ['performance indicators', 'video analysis', 'data collection', 'feedback provision', 'tactical analysis'],
+      examples: ['notational analysis in football', 'GPS tracking data', 'performance profiling'],
+      keyTerms: ['analysis', 'performance indicators', 'video analysis', 'data', 'feedback', 'tactics', 'profiling']
     }
   };
 
