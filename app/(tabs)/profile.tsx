@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLesson } from '@/contexts/LessonContext';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useSuperwall } from '@/contexts/SuperwallContext';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
@@ -21,12 +22,34 @@ export default function ProfileScreen() {
   const { user, isAuthenticated } = useAuth();
   const { lessons } = useLesson();
   const { settings, getTextSizeMultiplier } = useSettings();
+  const { purchasePremium, restorePurchases, isInitialized } = useSuperwall();
 
-  const handleUpgradeToPremium = () => {
+  const handleUpgradeToPremium = async () => {
+    if (!isInitialized) {
+      Alert.alert(
+        'Please Wait',
+        'Payment system is initializing. Please try again in a moment.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
-      'Premium Features',
-      'Unlock unlimited lessons, advanced AI explanations, exam simulator, and more!\n\nPremium features will be available via Apple Pay in a future update.',
-      [{ text: 'OK' }]
+      'Upgrade to Premium',
+      'Unlock unlimited lessons, advanced AI explanations, exam simulator, offline mode, and more!\n\nProduct ID: SmartstudyPremium',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Restore Purchases', 
+          style: 'default',
+          onPress: restorePurchases
+        },
+        { 
+          text: 'Purchase', 
+          style: 'default',
+          onPress: purchasePremium
+        },
+      ]
     );
   };
 
@@ -125,7 +148,7 @@ export default function ProfileScreen() {
                   settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
                   { fontSize: 13 * textMultiplier }
                 ]}>
-                  Unlock all features
+                  Unlock all features with Apple Pay
                 </Text>
               </View>
               <IconSymbol
@@ -135,6 +158,24 @@ export default function ProfileScreen() {
                 color={textColor}
               />
             </TouchableOpacity>
+          )}
+
+          {user.isPremium && (
+            <View style={[styles.premiumBadge, { backgroundColor: colors.highlight + '20' }]}>
+              <IconSymbol
+                ios_icon_name="crown.fill"
+                android_material_icon_name="workspace-premium"
+                size={20}
+                color={colors.highlight}
+              />
+              <Text style={[
+                styles.premiumBadgeText,
+                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
+                { color: colors.highlight, fontSize: 14 * textMultiplier }
+              ]}>
+                Premium Member
+              </Text>
+            </View>
           )}
         </View>
 
@@ -304,6 +345,20 @@ export default function ProfileScreen() {
             textMultiplier={textMultiplier}
             dyslexiaFont={settings.accessibility.dyslexiaFont}
           />
+
+          {user.isPremium && (
+            <SettingsItem
+              icon="arrow.clockwise"
+              materialIcon="restore"
+              title="Restore Purchases"
+              subtitle="Restore your premium access"
+              onPress={restorePurchases}
+              textColor={textColor}
+              cardBg={cardBg}
+              textMultiplier={textMultiplier}
+              dyslexiaFont={settings.accessibility.dyslexiaFont}
+            />
+          )}
         </View>
 
         <View style={styles.footer}>
@@ -445,6 +500,18 @@ const styles = StyleSheet.create({
   premiumBannerSubtitle: {
     fontSize: 13,
     color: colors.textSecondary,
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 8,
+  },
+  premiumBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   statsSection: {
     paddingHorizontal: 20,
