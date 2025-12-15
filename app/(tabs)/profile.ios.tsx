@@ -17,33 +17,9 @@ import { IconSymbol } from '@/components/IconSymbol';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { lessons } = useLesson();
   const { settings, getTextSizeMultiplier } = useSettings();
-
-  const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('User confirmed sign out');
-              await signOut();
-              console.log('Sign out completed');
-            } catch (error) {
-              console.error('Error during sign out:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            }
-          },
-        },
-      ]
-    );
-  };
 
   const handleUpgradeToPremium = () => {
     Alert.alert(
@@ -327,36 +303,6 @@ export default function ProfileScreen() {
             textMultiplier={textMultiplier}
             dyslexiaFont={settings.accessibility.dyslexiaFont}
           />
-          
-          <TouchableOpacity
-            style={[styles.settingsItem, { backgroundColor: cardBg }]}
-            onPress={handleSignOut}
-          >
-            <View style={[styles.settingsIcon, styles.signOutIcon]}>
-              <IconSymbol
-                ios_icon_name="arrow.right.square"
-                android_material_icon_name="logout"
-                size={24}
-                color={colors.error}
-              />
-            </View>
-            <View style={styles.settingsContent}>
-              <Text style={[
-                styles.settingsTitle,
-                styles.signOutText,
-                settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                { fontSize: 15 * textMultiplier }
-              ]}>
-                Sign Out
-              </Text>
-            </View>
-            <IconSymbol
-              ios_icon_name="chevron.right"
-              android_material_icon_name="chevron-right"
-              size={20}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
@@ -578,9 +524,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  signOutIcon: {
-    backgroundColor: colors.error + '10',
-  },
   settingsContent: {
     flex: 1,
   },
@@ -589,9 +532,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
     marginBottom: 2,
-  },
-  signOutText: {
-    color: colors.error,
   },
   settingsSubtitle: {
     fontSize: 13,

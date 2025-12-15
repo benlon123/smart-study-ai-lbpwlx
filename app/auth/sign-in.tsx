@@ -48,15 +48,10 @@ export default function SignInScreen() {
     setIsLoading(true);
     try {
       await signIn(email, password, rememberMe);
-      console.log('Sign in successful, dismissing modal...');
+      console.log('Sign in successful, redirecting to info page...');
       
-      // Use router.dismiss() to close the modal and return to the previous screen
-      // The auth context will update and the home screen will show the authenticated view
-      if (router.canDismiss()) {
-        router.dismiss();
-      } else {
-        router.replace('/(tabs)/(home)/');
-      }
+      // Redirect to info page after successful sign in
+      router.replace('/(tabs)/info');
     } catch (error) {
       console.error('Sign in error:', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign in');
@@ -69,11 +64,7 @@ export default function SignInScreen() {
     try {
       setIsLoading(true);
       await signInWithBiometric();
-      if (router.canDismiss()) {
-        router.dismiss();
-      } else {
-        router.replace('/(tabs)/(home)/');
-      }
+      router.replace('/(tabs)/info');
     } catch (error) {
       console.error('Biometric sign in error:', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Biometric authentication failed');
@@ -86,11 +77,7 @@ export default function SignInScreen() {
     try {
       setIsLoading(true);
       await signInWithApple();
-      if (router.canDismiss()) {
-        router.dismiss();
-      } else {
-        router.replace('/(tabs)/(home)/');
-      }
+      router.replace('/(tabs)/info');
     } catch (error) {
       console.error('Apple sign in error:', error);
       if (error instanceof Error && error.message !== 'Apple Sign-In was canceled') {

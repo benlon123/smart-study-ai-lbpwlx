@@ -342,11 +342,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await SecureStore.setItemAsync('saved_password', password);
       
       console.log('User signed up:', newUser);
-      
-      // Navigate to home after successful sign up
-      setTimeout(() => {
-        router.replace('/(tabs)/(home)/');
-      }, 100);
     } catch (error) {
       console.error('Sign up error:', error);
       if (error instanceof Error && error.message === 'EMAIL_EXISTS') {
@@ -428,11 +423,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       console.log('User signed in:', existingUser);
-      
-      // Navigate to home after successful sign in
-      setTimeout(() => {
-        router.replace('/(tabs)/(home)/');
-      }, 100);
     } catch (error) {
       console.error('Sign in error:', error);
       throw new Error('Failed to sign in. Please check your credentials.');
@@ -563,11 +553,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await SecureStore.setItemAsync('apple_user_id', credential.user);
       
       console.log('User signed in with Apple:', existingUser);
-      
-      // Navigate to home after successful sign in
-      setTimeout(() => {
-        router.replace('/(tabs)/(home)/');
-      }, 100);
     } catch (error: any) {
       if (error.code === 'ERR_REQUEST_CANCELED') {
         console.log('Apple Sign-In was canceled');
