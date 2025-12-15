@@ -1,7 +1,8 @@
+
 {
   "expo": {
     "name": "SmartStudy AI",
-    "slug": "SmartStudy AI",
+    "slug": "smartstudy-ai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -14,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ben1321.edu",
+      "bundleIdentifier": "com.ben1321.smartstudyai",
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -29,7 +30,7 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.ben1321.edu",
+      "package": "com.ben1321.smartstudyai",
       "permissions": [
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
@@ -83,5 +84,5 @@
       "router": {}
     }
   },
-  "scheme": "SmartStudy AI"
+  "scheme": "smartstudyai"
 }
