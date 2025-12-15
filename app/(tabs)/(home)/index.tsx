@@ -10,7 +10,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLesson } from '@/contexts/LessonContext';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';

@@ -62,10 +62,15 @@ export default function SignUpScreen() {
     setIsLoading(true);
     try {
       await signUp(name, email, password, selectedLanguage);
-      console.log('Sign up successful, navigating to home...');
+      console.log('Sign up successful, dismissing modal...');
       
-      // Navigate to home immediately after successful sign up
-      router.replace('/(tabs)/(home)/');
+      // Use router.dismiss() to close the modal and return to the previous screen
+      // The auth context will update and the home screen will show the authenticated view
+      if (router.canDismiss()) {
+        router.dismiss();
+      } else {
+        router.replace('/(tabs)/(home)/');
+      }
       
       // Show success message after navigation
       setTimeout(() => {
