@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ben1321.education",
+      "bundleIdentifier": "com.ben1321.edu",
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -29,7 +29,7 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.ben1321.education",
+      "package": "com.ben1321.edu",
       "permissions": [
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
