@@ -426,75 +426,52 @@ export const generateMockExamQuestions = (subject: Subject, topic: string, diffi
   const titleText = book || topic;
   
   for (let i = 1; i <= count; i++) {
-    const questionType = i % 3;
     const concept = content.concepts[i % content.concepts.length];
     const example = content.examples[i % content.examples.length];
     
+    // ALL QUESTIONS ARE NOW MULTIPLE CHOICE ONLY
+    // Generate 4 options with 1 correct answer
+    const correctAnswer = `The correct comprehensive definition of ${concept} with proper context`;
+    const incorrectOptions = [
+      `A definition that is partially correct but missing key elements`,
+      `A common misconception about ${concept}`,
+      `An unrelated concept from a different area of ${subject}`,
+    ];
+    
     // Add quote-based questions if quotes are available
-    if (content.quotes && content.quotes.length > 0 && i % 4 === 0) {
+    if (content.quotes && content.quotes.length > 0 && i % 3 === 0) {
       const quote = content.quotes[i % content.quotes.length];
+      const quoteCorrectAnswer = `This quote demonstrates ${concept} and reveals important aspects of the narrative through ${example}`;
+      const quoteIncorrectOptions = [
+        `This quote is primarily about a different theme unrelated to ${concept}`,
+        `This quote contradicts the main themes of ${book}`,
+        `This quote has no significant meaning in the context of ${book}`,
+      ];
+      
       questions.push({
         id: `question-${i}-${Date.now()}`,
         question: `Analyze the following quote from ${book}: "${quote}". What does this reveal about the themes and characters?`,
-        type: 'short-answer',
-        correctAnswer: `This quote from ${book} demonstrates ${concept} and reveals important aspects of the narrative. It shows ${example} and connects to the broader themes of the text. ${difficulty === 'Hard' ? 'A detailed analysis should include language techniques, symbolism, and contextual significance.' : 'Consider the literal meaning and its importance to the plot.'}`,
-        explanation: `Quote analysis is essential for ${subject} at ${level} level. This quote specifically relates to ${concept} and demonstrates key literary techniques used in ${book}.`,
+        type: 'multiple-choice',
+        options: [quoteCorrectAnswer, ...quoteIncorrectOptions].sort(() => Math.random() - 0.5),
+        correctAnswer: quoteCorrectAnswer,
+        explanation: `Quote analysis is essential for ${subject}. This quote from ${book} demonstrates ${concept} and reveals important aspects of the narrative. It shows ${example} and connects to the broader themes of the text. ${difficulty === 'Hard' ? 'A detailed analysis should include language techniques, symbolism, and contextual significance.' : 'Consider the literal meaning and its importance to the plot.'}`,
         hint: `Think about the context of this quote, who says it, and what it reveals about ${concept}.`,
         marks: difficulty === 'Easy' ? 5 : difficulty === 'Normal' ? 8 : 12,
       });
       continue;
     }
     
-    if (questionType === 0) {
-      // Single choice multiple choice
-      questions.push({
-        id: `question-${i}-${Date.now()}`,
-        question: `Which of the following best describes ${concept} in ${titleText}?`,
-        type: 'multiple-choice',
-        options: [
-          `A definition that is partially correct but missing key elements`,
-          `The correct comprehensive definition of ${concept} with proper context`,
-          `A common misconception about ${concept}`,
-          `An unrelated concept from a different area of ${subject}`,
-        ],
-        correctAnswer: `The correct comprehensive definition of ${concept} with proper context`,
-        explanation: `This question tests your understanding of ${concept} within ${titleText}. ${difficulty === 'Hard' ? 'At this level, you need to demonstrate critical thinking, analysis, and the ability to synthesize information.' : difficulty === 'Normal' ? 'You should be able to explain the concept and apply it to examples.' : 'Focus on understanding the basic principles and being able to explain them clearly.'}`,
-        hint: `Think about ${concept} and how it relates to ${example}. Consider the key terminology: ${content.keyTerms.slice(0, 3).join(', ')}.`,
-        marks: difficulty === 'Easy' ? 2 : difficulty === 'Normal' ? 4 : 6,
-      });
-    } else if (questionType === 1) {
-      // Multi-select question
-      const correctOptions = [
-        `${content.keyTerms[i % content.keyTerms.length]} is a key component`,
-        `${content.concepts[(i + 1) % content.concepts.length]} applies here`,
-      ];
-      const incorrectOptions = [
-        `This is not related to ${titleText}`,
-        `This contradicts the principles of ${concept}`,
-      ];
-      
-      questions.push({
-        id: `question-${i}-${Date.now()}`,
-        question: `Which of the following statements about ${concept} in ${titleText} are correct? (Select all that apply)`,
-        type: 'multi-select',
-        options: [...correctOptions, ...incorrectOptions].sort(() => Math.random() - 0.5),
-        correctAnswer: correctOptions,
-        explanation: `This multi-select question tests your comprehensive understanding of ${concept}. Both correct answers highlight important aspects of ${titleText}. ${difficulty === 'Hard' ? 'You need to identify all correct statements to demonstrate mastery.' : 'Understanding multiple facets of the concept is essential.'}`,
-        hint: `Consider which statements accurately reflect the principles of ${concept}. Think about ${example}.`,
-        marks: difficulty === 'Easy' ? 3 : difficulty === 'Normal' ? 5 : 8,
-      });
-    } else {
-      // Short answer
-      questions.push({
-        id: `question-${i}-${Date.now()}`,
-        question: `Explain how ${concept} applies in ${titleText}. Use ${example} to support your answer.`,
-        type: 'short-answer',
-        correctAnswer: `A comprehensive answer should explain ${concept}, demonstrate understanding through ${example}, and show how this applies to ${titleText}. ${difficulty === 'Hard' ? 'Include critical analysis and evaluation.' : ''}`,
-        explanation: `This question tests your ability to explain and apply ${concept} within ${titleText}. ${difficulty === 'Hard' ? 'At this level, you need to demonstrate critical thinking, analysis, and the ability to synthesize information.' : difficulty === 'Normal' ? 'You should be able to explain the concept and apply it to examples.' : 'Focus on understanding the basic principles and being able to explain them clearly.'}`,
-        hint: `Think about ${concept} and how it relates to ${example}. Consider the key terminology: ${content.keyTerms.slice(0, 3).join(', ')}.`,
-        marks: difficulty === 'Easy' ? 4 : difficulty === 'Normal' ? 6 : 10,
-      });
-    }
+    // Standard multiple choice question
+    questions.push({
+      id: `question-${i}-${Date.now()}`,
+      question: `Which of the following best describes ${concept} in ${titleText}?`,
+      type: 'multiple-choice',
+      options: [correctAnswer, ...incorrectOptions].sort(() => Math.random() - 0.5),
+      correctAnswer: correctAnswer,
+      explanation: `This question tests your understanding of ${concept} within ${titleText}. ${difficulty === 'Hard' ? 'At this level, you need to demonstrate critical thinking, analysis, and the ability to synthesize information.' : difficulty === 'Normal' ? 'You should be able to explain the concept and apply it to examples.' : 'Focus on understanding the basic principles and being able to explain them clearly.'} The correct answer provides a comprehensive definition with proper context.`,
+      hint: `Think about ${concept} and how it relates to ${example}. Consider the key terminology: ${content.keyTerms.slice(0, 3).join(', ')}.`,
+      marks: difficulty === 'Easy' ? 2 : difficulty === 'Normal' ? 4 : 6,
+    });
   }
   return questions;
 };
