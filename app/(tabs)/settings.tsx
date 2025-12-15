@@ -32,7 +32,7 @@ interface NotificationSettings {
 
 export default function SettingsScreen() {
   const { user, signOut, updateUser } = useAuth();
-  const { settings, setTextSize, toggleStudySounds, getColors, getTextStyle } = useSettings();
+  const { settings, setTextSize, getColors, getTextStyle } = useSettings();
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
     revisionReminders: false,
     eventReminders: false,
@@ -302,55 +302,6 @@ export default function SettingsScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Theme Settings */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <IconSymbol
-              ios_icon_name="paintbrush.fill"
-              android_material_icon_name="palette"
-              size={24}
-              color={colors.primary}
-            />
-            <Text style={[getTextStyle(styles.sectionTitle), { color: colors.text }]}>Theme</Text>
-          </View>
-
-          <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
-            <View style={[styles.settingItem, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-              <View style={styles.settingInfo}>
-                <Text style={[getTextStyle(styles.settingTitle), { color: colors.text }]}>Study Sounds</Text>
-                <Text style={[getTextStyle(styles.settingDescription), { color: colors.textSecondary }]}>
-                  Play ambient sounds while studying
-                </Text>
-              </View>
-              <Switch
-                value={settings.theme.studySounds}
-                onValueChange={toggleStudySounds}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor={colors.border}
-              />
-            </View>
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={[getTextStyle(styles.settingTitle), { color: colors.text }]}>Eye Strain Reduction</Text>
-                <Text style={[getTextStyle(styles.settingDescription), { color: colors.textSecondary }]}>
-                  Reduce blue light for comfortable reading
-                </Text>
-              </View>
-              <Switch
-                value={settings.theme.eyeStrainReduction}
-                onValueChange={() => {
-                  console.log('Eye strain reduction toggled');
-                }}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor={colors.border}
-              />
             </View>
           </View>
         </View>
