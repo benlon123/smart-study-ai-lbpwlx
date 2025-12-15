@@ -13,7 +13,6 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLesson } from '@/contexts/LessonContext';
 import { useSettings } from '@/contexts/SettingsContext';
-import { useSuperwall } from '@/contexts/SuperwallContext';
 import { colors, commonStyles, buttonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
@@ -22,36 +21,6 @@ export default function ProfileScreen() {
   const { user, isAuthenticated } = useAuth();
   const { lessons } = useLesson();
   const { settings, getTextSizeMultiplier } = useSettings();
-  const { purchasePremium, restorePurchases, isInitialized } = useSuperwall();
-
-  const handleUpgradeToPremium = async () => {
-    if (!isInitialized) {
-      Alert.alert(
-        'Please Wait',
-        'Payment system is initializing. Please try again in a moment.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-
-    Alert.alert(
-      'Upgrade to Premium',
-      'Unlock unlimited lessons, advanced AI explanations, exam simulator, offline mode, and more!\n\nProduct ID: SmartstudyPremium',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Restore Purchases', 
-          style: 'default',
-          onPress: restorePurchases
-        },
-        { 
-          text: 'Purchase', 
-          style: 'default',
-          onPress: purchasePremium
-        },
-      ]
-    );
-  };
 
   if (!isAuthenticated || !user) {
     return (
@@ -123,42 +92,6 @@ export default function ProfileScreen() {
           ]}>
             {user.email}
           </Text>
-          
-          {!user.isPremium && (
-            <TouchableOpacity
-              style={[styles.premiumBanner, { backgroundColor: cardBg }]}
-              onPress={handleUpgradeToPremium}
-            >
-              <IconSymbol
-                ios_icon_name="crown.fill"
-                android_material_icon_name="workspace-premium"
-                size={24}
-                color={colors.highlight}
-              />
-              <View style={styles.premiumBannerText}>
-                <Text style={[
-                  styles.premiumBannerTitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { color: textColor, fontSize: 16 * textMultiplier }
-                ]}>
-                  Upgrade to Premium
-                </Text>
-                <Text style={[
-                  styles.premiumBannerSubtitle,
-                  settings.accessibility.dyslexiaFont && styles.dyslexiaFont,
-                  { fontSize: 13 * textMultiplier }
-                ]}>
-                  Unlock all features with Apple Pay
-                </Text>
-              </View>
-              <IconSymbol
-                ios_icon_name="chevron.right"
-                android_material_icon_name="chevron-right"
-                size={20}
-                color={textColor}
-              />
-            </TouchableOpacity>
-          )}
 
           {user.isPremium && (
             <View style={[styles.premiumBadge, { backgroundColor: colors.highlight + '20' }]}>
@@ -345,20 +278,6 @@ export default function ProfileScreen() {
             textMultiplier={textMultiplier}
             dyslexiaFont={settings.accessibility.dyslexiaFont}
           />
-
-          {user.isPremium && (
-            <SettingsItem
-              icon="arrow.clockwise"
-              materialIcon="restore"
-              title="Restore Purchases"
-              subtitle="Restore your premium access"
-              onPress={restorePurchases}
-              textColor={textColor}
-              cardBg={cardBg}
-              textMultiplier={textMultiplier}
-              dyslexiaFont={settings.accessibility.dyslexiaFont}
-            />
-          )}
         </View>
 
         <View style={styles.footer}>
@@ -475,31 +394,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 20,
-  },
-  premiumBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 16,
-    width: '100%',
-    gap: 12,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 3,
-  },
-  premiumBannerText: {
-    flex: 1,
-  },
-  premiumBannerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  premiumBannerSubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
   },
   premiumBadge: {
     flexDirection: 'row',

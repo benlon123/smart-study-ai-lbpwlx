@@ -8,7 +8,6 @@ import { LessonProvider } from '@/contexts/LessonContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { WidgetProvider } from '@/contexts/WidgetContext';
-import { SuperwallProvider } from '@/contexts/SuperwallContext';
 import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 
@@ -35,52 +34,50 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <SuperwallProvider>
-        <SettingsProvider>
-          <LessonProvider>
-            <AdminProvider>
-              <WidgetProvider>
-                <StatusBar style="auto" />
-                <Stack
-                  screenOptions={{
+      <SettingsProvider>
+        <LessonProvider>
+          <AdminProvider>
+            <WidgetProvider>
+              <StatusBar style="auto" />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: Platform.OS === 'ios' ? 'default' : 'fade',
+                }}
+              >
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="auth/sign-in" options={{ headerShown: false }} />
+                <Stack.Screen name="auth/sign-up" options={{ headerShown: false }} />
+                <Stack.Screen name="auth/forgot-password" options={{ headerShown: false }} />
+                <Stack.Screen name="lesson/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="lesson/create" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="modal"
+                  options={{
+                    presentation: 'modal',
                     headerShown: false,
-                    animation: Platform.OS === 'ios' ? 'default' : 'fade',
                   }}
-                >
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="auth/sign-in" options={{ headerShown: false }} />
-                  <Stack.Screen name="auth/sign-up" options={{ headerShown: false }} />
-                  <Stack.Screen name="auth/forgot-password" options={{ headerShown: false }} />
-                  <Stack.Screen name="lesson/[id]" options={{ headerShown: false }} />
-                  <Stack.Screen name="lesson/create" options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name="modal"
-                    options={{
-                      presentation: 'modal',
-                      headerShown: false,
-                    }}
-                  />
-                  <Stack.Screen
-                    name="transparent-modal"
-                    options={{
-                      presentation: 'transparentModal',
-                      animation: 'fade',
-                      headerShown: false,
-                    }}
-                  />
-                  <Stack.Screen
-                    name="formsheet"
-                    options={{
-                      presentation: 'formSheet',
-                      headerShown: false,
-                    }}
-                  />
-                </Stack>
-              </WidgetProvider>
-            </AdminProvider>
-          </LessonProvider>
-        </SettingsProvider>
-      </SuperwallProvider>
+                />
+                <Stack.Screen
+                  name="transparent-modal"
+                  options={{
+                    presentation: 'transparentModal',
+                    animation: 'fade',
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="formsheet"
+                  options={{
+                    presentation: 'formSheet',
+                    headerShown: false,
+                  }}
+                />
+              </Stack>
+            </WidgetProvider>
+          </AdminProvider>
+        </LessonProvider>
+      </SettingsProvider>
     </AuthProvider>
   );
 }
