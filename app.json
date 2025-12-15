@@ -5,7 +5,7 @@
     "slug": "smartstudy-ai",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/natively-dark.png",
+    "icon": "./assets/images/final_quest_240x240.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -17,6 +17,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.ben1321.smartstudyai",
       "usesAppleSignIn": true,
+      "buildNumber": "1",
+      "icon": "./assets/images/final_quest_240x240.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "Allow SmartStudy AI to use Face ID for secure and convenient sign-in.",
@@ -31,6 +33,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.ben1321.smartstudyai",
+      "versionCode": 1,
       "permissions": [
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
