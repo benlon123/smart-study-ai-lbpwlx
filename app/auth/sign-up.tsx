@@ -43,24 +43,6 @@ export default function SignUpScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Redirect when authenticated
-  useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      console.log('User authenticated after sign up, redirecting to info page...');
-      // Use setTimeout to ensure state has fully updated
-      setTimeout(() => {
-        router.replace('/(tabs)/info');
-        // Show success message after navigation
-        setTimeout(() => {
-          Alert.alert(
-            'Success!',
-            'Account created successfully. Please save your password in a secure location.'
-          );
-        }, 500);
-      }, 100);
-    }
-  }, [isAuthenticated, isLoading]);
-
   const handleSignUp = async () => {
     if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
@@ -82,7 +64,25 @@ export default function SignUpScreen() {
       console.log('Starting sign up process...');
       await signUp(name, email, password, selectedLanguage);
       console.log('Sign up successful');
-      // Navigation will happen via useEffect when isAuthenticated becomes true
+      
+      // Show success message and stay on the same page
+      Alert.alert(
+        'Success!',
+        'Account created successfully. Please save your password in a secure location.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Clear the form
+              setName('');
+              setEmail('');
+              setPassword('');
+              setConfirmPassword('');
+              setIsLoading(false);
+            }
+          }
+        ]
+      );
     } catch (error) {
       console.error('Sign up error:', error);
       setIsLoading(false);

@@ -153,6 +153,14 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleUpgrade = () => {
+    Alert.alert(
+      'Upgrade to Premium',
+      'Premium features are coming soon! Stay tuned for exclusive content and advanced features.',
+      [{ text: 'OK' }]
+    );
+  };
+
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -257,6 +265,43 @@ export default function SettingsScreen() {
             />
           </TouchableOpacity>
         </View>
+
+        {/* Premium Upgrade Section */}
+        {!user.isPremium && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={[styles.upgradeCard, { 
+                backgroundColor: colors.primary + '15',
+                borderColor: colors.primary + '30',
+                borderWidth: 2,
+              }]}
+              onPress={handleUpgrade}
+            >
+              <View style={styles.upgradeContent}>
+                <IconSymbol
+                  ios_icon_name="crown.fill"
+                  android_material_icon_name="workspace-premium"
+                  size={32}
+                  color={colors.highlight}
+                />
+                <View style={styles.upgradeTextContainer}>
+                  <Text style={[getTextStyle(styles.upgradeTitle), { color: colors.text }]}>
+                    Upgrade to Premium
+                  </Text>
+                  <Text style={[getTextStyle(styles.upgradeDescription), { color: colors.textSecondary }]}>
+                    Unlock unlimited lessons, advanced AI features, and more
+                  </Text>
+                </View>
+                <IconSymbol
+                  ios_icon_name="chevron.right"
+                  android_material_icon_name="chevron-right"
+                  size={24}
+                  color={colors.primary}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Accessibility Settings */}
         <View style={styles.section}>
@@ -625,6 +670,27 @@ const styles = StyleSheet.create({
   },
   profileEmail: {
     fontSize: 14,
+  },
+  upgradeCard: {
+    borderRadius: 16,
+    padding: 20,
+  },
+  upgradeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  upgradeTextContainer: {
+    flex: 1,
+  },
+  upgradeTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  upgradeDescription: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   permissionBanner: {
     flexDirection: 'row',
