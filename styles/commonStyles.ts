@@ -1,5 +1,5 @@
 
-import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet, ViewStyle, TextStyle, Platform } from 'react-native';
 
 export const colors = {
   background: '#F5F5DC',        // Beige
@@ -40,8 +40,18 @@ export const buttonStyles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0px 4px 8px rgba(116, 81, 235, 0.3)',
-    elevation: 4,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 4px 8px rgba(116, 81, 235, 0.3)',
+      } as any,
+      default: {
+        shadowColor: '#7451EB',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+      },
+    }),
   },
   secondary: {
     backgroundColor: colors.secondary,
@@ -137,8 +147,18 @@ export const commonStyles = StyleSheet.create({
     padding: 16,
     marginVertical: 8,
     width: '100%',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+      } as any,
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
+      },
+    }),
   },
   input: {
     backgroundColor: colors.card,
