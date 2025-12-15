@@ -43,7 +43,7 @@ export const buttonStyles = StyleSheet.create({
     ...Platform.select({
       web: {
         boxShadow: '0px 4px 8px rgba(116, 81, 235, 0.3)',
-      } as any,
+      },
       default: {
         shadowColor: '#7451EB',
         shadowOffset: { width: 0, height: 4 },
@@ -150,7 +150,7 @@ export const commonStyles = StyleSheet.create({
     ...Platform.select({
       web: {
         boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-      } as any,
+      },
       default: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
