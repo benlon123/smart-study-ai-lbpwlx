@@ -34,9 +34,7 @@ export default function ProfileScreen() {
             try {
               console.log('User confirmed sign out');
               await signOut();
-              console.log('Sign out completed, navigating to home');
-              // Use replace to ensure we can't go back
-              router.replace('/(tabs)/(home)/');
+              console.log('Sign out completed');
             } catch (error) {
               console.error('Error during sign out:', error);
               Alert.alert('Error', 'Failed to sign out. Please try again.');

@@ -6,6 +6,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, PremiumGrant } from '@/types/lesson';
+import { router } from 'expo-router';
 
 interface AuthContextType {
   user: User | null;
@@ -341,6 +342,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await SecureStore.setItemAsync('saved_password', password);
       
       console.log('User signed up:', newUser);
+      
+      // Navigate to home after successful sign up
+      setTimeout(() => {
+        router.replace('/(tabs)/(home)/');
+      }, 100);
     } catch (error) {
       console.error('Sign up error:', error);
       if (error instanceof Error && error.message === 'EMAIL_EXISTS') {
@@ -422,6 +428,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       console.log('User signed in:', existingUser);
+      
+      // Navigate to home after successful sign in
+      setTimeout(() => {
+        router.replace('/(tabs)/(home)/');
+      }, 100);
     } catch (error) {
       console.error('Sign in error:', error);
       throw new Error('Failed to sign in. Please check your credentials.');
@@ -552,6 +563,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await SecureStore.setItemAsync('apple_user_id', credential.user);
       
       console.log('User signed in with Apple:', existingUser);
+      
+      // Navigate to home after successful sign in
+      setTimeout(() => {
+        router.replace('/(tabs)/(home)/');
+      }, 100);
     } catch (error: any) {
       if (error.code === 'ERR_REQUEST_CANCELED') {
         console.log('Apple Sign-In was canceled');
@@ -627,10 +643,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       console.log('User signed out successfully');
+      
+      // Navigate to home screen which will show the auth buttons
+      setTimeout(() => {
+        router.replace('/(tabs)/(home)/');
+      }, 100);
     } catch (error) {
       console.error('Sign out error:', error);
-      // Even if there's an error, clear the user state
+      // Even if there's an error, clear the user state and navigate
       setUser(null);
+      setTimeout(() => {
+        router.replace('/(tabs)/(home)/');
+      }, 100);
     }
   };
 
