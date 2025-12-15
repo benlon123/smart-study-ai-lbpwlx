@@ -602,22 +602,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('Sign out initiated');
       
-      // Keep user data in storage but clear current session
-      await AsyncStorage.removeItem(CURRENT_USER_KEY);
+      // Clear current session immediately
       setUser(null);
       
       // Clear saved credentials if biometric is not enabled
       if (!biometricEnabled) {
-        await SecureStore.deleteItemAsync('saved_email');
-        await SecureStore.deleteItemAsync('saved_password');
+        try {
+          await SecureStore.deleteItemAsync('saved_email');
+          await SecureStore.deleteItemAsync('saved_password');
+          console.log('Cleared saved credentials');
+        } catch (error) {
+          console.error('Error clearing credentials:', error);
+        }
       }
       
-      console.log('User signed out');
+      // Remove current user from AsyncStorage
+      try {
+        await AsyncStorage.removeItem(CURRENT_USER_KEY);
+        console.log('Cleared current user from storage');
+      } catch (error) {
+        console.error('Error clearing current user:', error);
+      }
+      
+      console.log('User signed out successfully');
     } catch (error) {
       console.error('Sign out error:', error);
-      throw new Error('Failed to sign out.');
+      // Even if there's an error, clear the user state
+      setUser(null);
     }
   };
 

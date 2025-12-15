@@ -22,7 +22,7 @@ export default function ProfileScreen() {
   const { lessons } = useLesson();
   const { settings, getTextSizeMultiplier } = useSettings();
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     Alert.alert(
       'Sign Out',
       'Are you sure you want to sign out?',
@@ -32,8 +32,16 @@ export default function ProfileScreen() {
           text: 'Sign Out',
           style: 'destructive',
           onPress: async () => {
-            await signOut();
-            router.replace('/(tabs)/(home)/');
+            try {
+              console.log('User confirmed sign out');
+              await signOut();
+              console.log('Sign out completed, navigating to home');
+              // Use replace to ensure we can't go back
+              router.replace('/(tabs)/(home)/');
+            } catch (error) {
+              console.error('Error during sign out:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
           },
         },
       ]
