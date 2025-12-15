@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "SmartStudy AI",
@@ -18,7 +19,9 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSFaceIDUsageDescription": "Allow SmartStudy AI to use Face ID for secure and convenient sign-in."
+        "NSFaceIDUsageDescription": "Allow SmartStudy AI to use Face ID for secure and convenient sign-in.",
+        "NSCalendarsUsageDescription": "Allow SmartStudy AI to access your calendar to schedule revision sessions and track study events.",
+        "NSRemindersUsageDescription": "Allow SmartStudy AI to create reminders for your revision schedule."
       }
     },
     "android": {
@@ -30,7 +33,12 @@
       "package": "com.anonymous.Natively",
       "permissions": [
         "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
+        "USE_FINGERPRINT",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
+        "POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -53,7 +61,21 @@
           "faceIDPermission": "Allow SmartStudy AI to access your Face ID biometric data for secure credential storage."
         }
       ],
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Allow SmartStudy AI to access your calendar to schedule revision sessions and track study events."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/natively-dark.png",
+          "color": "#6366F1",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "scheme": "natively",
     "experiments": {

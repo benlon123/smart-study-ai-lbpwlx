@@ -22,6 +22,10 @@ export default function TabLayout() {
         <Icon sf="checklist" />
         <Label>Tasks</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger key="calendar" name="calendar">
+        <Icon sf="calendar" />
+        <Label>Calendar</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger key="analytics" name="analytics">
         <Icon sf="chart.bar.fill" />
         <Label>Analytics</Label>
