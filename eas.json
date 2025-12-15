@@ -27,7 +27,8 @@
     },
     "production": {
       "ios": {
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "autoIncrement": "buildNumber"
       },
       "android": {
         "buildType": "app-bundle"
@@ -35,6 +36,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "blonergan55@gmail.com",
+        "ascAppId": "placeholder",
+        "appleTeamId": "placeholder"
+      }
+    }
   }
 }

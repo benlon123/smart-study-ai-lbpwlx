@@ -33,6 +33,7 @@
         "foregroundImage": "./assets/images/natively-dark.png",
         "backgroundColor": "#000000"
       },
+      "icon": "./assets/images/final_quest_240x240.png",
       "edgeToEdgeEnabled": true,
       "package": "com.ben1321.smartstudyai",
       "versionCode": 1,
