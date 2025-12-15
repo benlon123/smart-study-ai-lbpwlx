@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ben1321.smartstudyai",
+      "bundleIdentifier": "com.yourname.smartstudyai",
       "buildNumber": "1",
       "icon": "./assets/images/final_quest_240x240.png",
       "infoPlist": {
@@ -31,7 +31,7 @@
       },
       "icon": "./assets/images/final_quest_240x240.png",
       "edgeToEdgeEnabled": true,
-      "package": "com.ben1321.smartstudyai",
+      "package": "com.yourname.smartstudyai",
       "versionCode": 1,
       "permissions": []
     },
