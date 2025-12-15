@@ -5,7 +5,7 @@ import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function TabLayout() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
 
   const tabs: TabBarItem[] = [
     {
@@ -46,6 +46,16 @@ export default function TabLayout() {
     },
   ];
 
+  // Add admin tab if user is admin
+  if (isAdmin) {
+    tabs.splice(5, 0, {
+      name: 'admin',
+      route: '/(tabs)/admin',
+      icon: 'admin-panel-settings',
+      label: 'Admin',
+    });
+  }
+
   return (
     <>
       <Stack
@@ -59,6 +69,7 @@ export default function TabLayout() {
         <Stack.Screen key="calendar" name="calendar" />
         <Stack.Screen key="info" name="info" />
         <Stack.Screen key="analytics" name="analytics" />
+        <Stack.Screen key="admin" name="admin" />
         <Stack.Screen key="settings" name="settings" />
       </Stack>
       {isAuthenticated && <FloatingTabBar tabs={tabs} />}

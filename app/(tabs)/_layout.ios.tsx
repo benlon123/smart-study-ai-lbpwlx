@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { View } from 'react-native';
 
 export default function TabLayout() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
 
   if (!isAuthenticated) {
     // Return a simple view without tabs when not authenticated
@@ -34,6 +34,12 @@ export default function TabLayout() {
         <Icon sf="chart.bar.fill" />
         <Label>Analytics</Label>
       </NativeTabs.Trigger>
+      {isAdmin && (
+        <NativeTabs.Trigger key="admin" name="admin">
+          <Icon sf="shield.fill" />
+          <Label>Admin</Label>
+        </NativeTabs.Trigger>
+      )}
       <NativeTabs.Trigger key="settings" name="settings">
         <Icon sf="gearshape.fill" />
         <Label>Settings</Label>
