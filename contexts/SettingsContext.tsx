@@ -4,9 +4,7 @@ import { useAuth } from './AuthContext';
 
 export interface AppSettings {
   accessibility: {
-    dyslexiaFont: boolean;
     textSize: 'small' | 'medium' | 'large' | 'extra-large';
-    highContrast: boolean;
     screenReader: boolean;
   };
   theme: {
@@ -41,9 +39,7 @@ export interface AppSettings {
 interface SettingsContextType {
   settings: AppSettings;
   updateSettings: (newSettings: Partial<AppSettings>) => void;
-  toggleDyslexiaFont: () => void;
   toggleDarkMode: () => void;
-  toggleHighContrast: () => void;
   toggleNotifications: (key: keyof AppSettings['notifications']) => void;
   setTextSize: (size: 'small' | 'medium' | 'large' | 'extra-large') => void;
   setDefaultDifficulty: (difficulty: 'Easy' | 'Normal' | 'Hard') => void;
@@ -57,9 +53,7 @@ interface SettingsContextType {
 
 const defaultSettings: AppSettings = {
   accessibility: {
-    dyslexiaFont: false,
     textSize: 'medium',
-    highContrast: false,
     screenReader: false,
   },
   theme: {
@@ -97,7 +91,7 @@ export const useSettings = () => {
   return context;
 };
 
-// Color schemes
+// Color scheme
 const normalColors = {
   background: '#F5F5DC',
   text: '#2E294E',
@@ -113,21 +107,6 @@ const normalColors = {
   warning: '#FF9800',
 };
 
-const highContrastColors = {
-  background: '#FFFFFF',
-  text: '#000000',
-  textSecondary: '#1a1a1a',
-  primary: '#0000CC',
-  secondary: '#4B0082',
-  accent: '#CC0000',
-  card: '#FFFFFF',
-  highlight: '#FFD700',
-  border: '#000000',
-  success: '#006400',
-  error: '#CC0000',
-  warning: '#FF8C00',
-};
-
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, updateUser } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
@@ -137,9 +116,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (user?.settings) {
       setSettings({
         accessibility: {
-          dyslexiaFont: user.settings.accessibility.dyslexiaFont,
           textSize: user.settings.accessibility.textSize,
-          highContrast: user.settings.accessibility.highContrast,
           screenReader: user.settings.accessibility.screenReader,
         },
         theme: {
@@ -182,7 +159,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           settings: {
             accessibility: {
               ...updated.accessibility,
-              voiceCommands: false, // Voice commands removed
+              dyslexiaFont: false,
+              highContrast: false,
+              voiceCommands: false,
             },
             theme: {
               ...updated.theme,
@@ -200,31 +179,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
-  const toggleDyslexiaFont = () => {
-    console.log('Toggling dyslexia font from', settings.accessibility.dyslexiaFont, 'to', !settings.accessibility.dyslexiaFont);
-    updateSettings({
-      accessibility: {
-        ...settings.accessibility,
-        dyslexiaFont: !settings.accessibility.dyslexiaFont,
-      },
-    });
-  };
-
   const toggleDarkMode = () => {
     updateSettings({
       theme: {
         ...settings.theme,
         mode: settings.theme.mode === 'dark' ? 'light' : 'dark',
-      },
-    });
-  };
-
-  const toggleHighContrast = () => {
-    console.log('Toggling high contrast from', settings.accessibility.highContrast, 'to', !settings.accessibility.highContrast);
-    updateSettings({
-      accessibility: {
-        ...settings.accessibility,
-        highContrast: !settings.accessibility.highContrast,
       },
     });
   };
@@ -300,35 +259,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const getColors = () => {
-    return settings.accessibility.highContrast ? highContrastColors : normalColors;
+    return normalColors;
   };
 
   const getTextStyle = (baseStyle: any) => {
     const style: any = { ...baseStyle };
     const multiplier = getTextSizeMultiplier();
-    const currentColors = getColors();
-    
-    // Apply dyslexia font
-    if (settings.accessibility.dyslexiaFont) {
-      style.fontFamily = 'OpenDyslexic';
-      style.letterSpacing = 0.5; // Increase letter spacing for better readability
-      style.lineHeight = style.lineHeight ? style.lineHeight * 1.2 : undefined; // Increase line height
-    }
     
     // Apply text size multiplier
     if (style.fontSize) {
       style.fontSize = Math.round(style.fontSize * multiplier);
-    }
-    
-    // Apply high contrast colors
-    if (settings.accessibility.highContrast) {
-      if (style.color === normalColors.text || style.color === '#2E294E') {
-        style.color = currentColors.text;
-      } else if (style.color === normalColors.textSecondary || style.color === '#6E798C') {
-        style.color = currentColors.textSecondary;
-      } else if (style.color === normalColors.primary || style.color === '#7451EB') {
-        style.color = currentColors.primary;
-      }
     }
     
     return style;
@@ -339,9 +279,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       value={{
         settings,
         updateSettings,
-        toggleDyslexiaFont,
         toggleDarkMode,
-        toggleHighContrast,
         toggleNotifications,
         setTextSize,
         setDefaultDifficulty,

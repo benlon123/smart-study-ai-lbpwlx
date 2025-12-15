@@ -32,7 +32,7 @@ interface NotificationSettings {
 
 export default function SettingsScreen() {
   const { user, signOut, updateUser } = useAuth();
-  const { settings, toggleDyslexiaFont, toggleHighContrast, setTextSize, toggleStudySounds, setCustomColors, getColors, getTextStyle } = useSettings();
+  const { settings, setTextSize, toggleStudySounds, getColors, getTextStyle } = useSettings();
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
     revisionReminders: false,
     eventReminders: false,
@@ -44,7 +44,7 @@ export default function SettingsScreen() {
   const [editName, setEditName] = useState('');
   const [profileImage, setProfileImage] = useState<string | undefined>(undefined);
 
-  // Get current colors based on high contrast setting
+  // Get current colors
   const colors = getColors();
 
   useEffect(() => {
@@ -59,8 +59,6 @@ export default function SettingsScreen() {
   // Log settings changes for debugging
   useEffect(() => {
     console.log('Current accessibility settings:', {
-      dyslexiaFont: settings.accessibility.dyslexiaFont,
-      highContrast: settings.accessibility.highContrast,
       textSize: settings.accessibility.textSize,
     });
   }, [settings.accessibility]);
@@ -184,30 +182,6 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleToggleDyslexiaFont = () => {
-    console.log('Dyslexia font toggle pressed');
-    toggleDyslexiaFont();
-    Alert.alert(
-      'Dyslexia Font',
-      settings.accessibility.dyslexiaFont 
-        ? 'Dyslexia-friendly font has been disabled' 
-        : 'Dyslexia-friendly font has been enabled. Text will now use OpenDyslexic font with increased spacing.',
-      [{ text: 'OK' }]
-    );
-  };
-
-  const handleToggleHighContrast = () => {
-    console.log('High contrast toggle pressed');
-    toggleHighContrast();
-    Alert.alert(
-      'High Contrast',
-      settings.accessibility.highContrast 
-        ? 'High contrast mode has been disabled' 
-        : 'High contrast mode has been enabled. Colors will now have stronger contrast for better visibility.',
-      [{ text: 'OK' }]
-    );
-  };
-
   if (!user) {
     return (
       <View style={[commonStyles.container, commonStyles.centerContent, { backgroundColor: colors.background }]}>
@@ -300,44 +274,6 @@ export default function SettingsScreen() {
           </Text>
 
           <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
-            <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
-              <View style={styles.settingInfo}>
-                <Text style={getTextStyle(styles.settingTitle)}>Dyslexia-Friendly Font</Text>
-                <Text style={getTextStyle(styles.settingDescription)}>
-                  Use OpenDyslexic font with increased spacing for easier reading
-                </Text>
-                <Text style={getTextStyle([styles.settingStatus, { color: settings.accessibility.dyslexiaFont ? colors.success : colors.textSecondary }])}>
-                  Status: {settings.accessibility.dyslexiaFont ? 'Enabled ✓' : 'Disabled'}
-                </Text>
-              </View>
-              <Switch
-                value={settings.accessibility.dyslexiaFont}
-                onValueChange={handleToggleDyslexiaFont}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor={colors.border}
-              />
-            </View>
-
-            <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
-              <View style={styles.settingInfo}>
-                <Text style={getTextStyle(styles.settingTitle)}>High Contrast</Text>
-                <Text style={getTextStyle(styles.settingDescription)}>
-                  Increase contrast for better visibility with stronger colors
-                </Text>
-                <Text style={getTextStyle([styles.settingStatus, { color: settings.accessibility.highContrast ? colors.success : colors.textSecondary }])}>
-                  Status: {settings.accessibility.highContrast ? 'Enabled ✓' : 'Disabled'}
-                </Text>
-              </View>
-              <Switch
-                value={settings.accessibility.highContrast}
-                onValueChange={handleToggleHighContrast}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor={colors.border}
-              />
-            </View>
-
             <View style={[styles.settingItem, { borderBottomColor: 'transparent' }]}>
               <View style={styles.settingInfo}>
                 <Text style={getTextStyle(styles.settingTitle)}>Text Size</Text>
@@ -766,12 +702,6 @@ const styles = StyleSheet.create({
   settingDescription: {
     fontSize: 13,
     lineHeight: 18,
-    marginBottom: 4,
-  },
-  settingStatus: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 4,
   },
   textSizeButtons: {
     flexDirection: 'row',
