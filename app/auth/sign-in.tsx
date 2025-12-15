@@ -20,7 +20,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 
 export default function SignInScreen() {
   const router = useRouter();
-  const { signIn, signInWithBiometric, signInWithApple, biometricAvailable, biometricEnabled } = useAuth();
+  const { signIn, signInWithBiometric, signInWithApple, biometricAvailable, biometricEnabled, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
@@ -31,6 +31,17 @@ export default function SignInScreen() {
   useEffect(() => {
     checkAppleSignInAvailability();
   }, []);
+
+  // Redirect when authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      console.log('User authenticated, redirecting to info page...');
+      // Use setTimeout to ensure state has fully updated
+      setTimeout(() => {
+        router.replace('/(tabs)/info');
+      }, 100);
+    }
+  }, [isAuthenticated, isLoading]);
 
   const checkAppleSignInAvailability = async () => {
     if (Platform.OS === 'ios') {
@@ -47,44 +58,44 @@ export default function SignInScreen() {
 
     setIsLoading(true);
     try {
+      console.log('Starting sign in process...');
       await signIn(email, password, rememberMe);
-      console.log('Sign in successful, redirecting to info page...');
-      
-      // Redirect to info page after successful sign in
-      router.replace('/(tabs)/info');
+      console.log('Sign in successful');
+      // Navigation will happen via useEffect when isAuthenticated becomes true
     } catch (error) {
       console.error('Sign in error:', error);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign in');
-    } finally {
       setIsLoading(false);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign in');
     }
   };
 
   const handleBiometricSignIn = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
+      console.log('Starting biometric sign in...');
       await signInWithBiometric();
-      router.replace('/(tabs)/info');
+      console.log('Biometric sign in successful');
+      // Navigation will happen via useEffect when isAuthenticated becomes true
     } catch (error) {
       console.error('Biometric sign in error:', error);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Biometric authentication failed');
-    } finally {
       setIsLoading(false);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Biometric authentication failed');
     }
   };
 
   const handleAppleSignIn = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
+      console.log('Starting Apple sign in...');
       await signInWithApple();
-      router.replace('/(tabs)/info');
+      console.log('Apple sign in successful');
+      // Navigation will happen via useEffect when isAuthenticated becomes true
     } catch (error) {
       console.error('Apple sign in error:', error);
+      setIsLoading(false);
       if (error instanceof Error && error.message !== 'Apple Sign-In was canceled') {
         Alert.alert('Error', error.message);
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -167,6 +178,7 @@ export default function SignInScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                editable={!isLoading}
               />
             </View>
 
@@ -182,10 +194,12 @@ export default function SignInScreen() {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  editable={!isLoading}
                 />
                 <TouchableOpacity
                   style={styles.eyeIcon}
                   onPress={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
                 >
                   <IconSymbol
                     ios_icon_name={showPassword ? 'eye.slash' : 'eye'}
@@ -201,6 +215,7 @@ export default function SignInScreen() {
               <TouchableOpacity
                 style={styles.checkboxContainer}
                 onPress={() => setRememberMe(!rememberMe)}
+                disabled={isLoading}
               >
                 <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
                   {rememberMe && (
@@ -219,6 +234,7 @@ export default function SignInScreen() {
             <TouchableOpacity
               style={styles.forgotPassword}
               onPress={() => router.push('/auth/forgot-password')}
+              disabled={isLoading}
             >
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
@@ -239,7 +255,10 @@ export default function SignInScreen() {
               <Text style={commonStyles.textSecondary}>
                 Don&apos;t have an account?{' '}
               </Text>
-              <TouchableOpacity onPress={() => router.replace('/auth/sign-up')}>
+              <TouchableOpacity 
+                onPress={() => router.replace('/auth/sign-up')}
+                disabled={isLoading}
+              >
                 <Text style={styles.linkText}>Sign Up</Text>
               </TouchableOpacity>
             </View>

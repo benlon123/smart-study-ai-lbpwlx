@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -33,7 +33,7 @@ const AVAILABLE_LANGUAGES = [
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const { signUp } = useAuth();
+  const { signUp, isAuthenticated } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,6 +42,24 @@ export default function SignUpScreen() {
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect when authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      console.log('User authenticated after sign up, redirecting to info page...');
+      // Use setTimeout to ensure state has fully updated
+      setTimeout(() => {
+        router.replace('/(tabs)/info');
+        // Show success message after navigation
+        setTimeout(() => {
+          Alert.alert(
+            'Success!',
+            'Account created successfully. Please save your password in a secure location.'
+          );
+        }, 500);
+      }, 100);
+    }
+  }, [isAuthenticated, isLoading]);
 
   const handleSignUp = async () => {
     if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -61,21 +79,13 @@ export default function SignUpScreen() {
 
     setIsLoading(true);
     try {
+      console.log('Starting sign up process...');
       await signUp(name, email, password, selectedLanguage);
-      console.log('Sign up successful, redirecting to info page...');
-      
-      // Redirect to info page after successful sign up
-      router.replace('/(tabs)/info');
-      
-      // Show success message after navigation
-      setTimeout(() => {
-        Alert.alert(
-          'Success!',
-          'Account created successfully. Please save your password in a secure location.'
-        );
-      }, 500);
+      console.log('Sign up successful');
+      // Navigation will happen via useEffect when isAuthenticated becomes true
     } catch (error) {
       console.error('Sign up error:', error);
+      setIsLoading(false);
       
       // Check if error is about existing email
       if (error instanceof Error && error.message.includes('already registered')) {
@@ -96,8 +106,6 @@ export default function SignUpScreen() {
       } else {
         Alert.alert('Error', error instanceof Error ? error.message : 'Failed to sign up');
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -143,6 +151,7 @@ export default function SignUpScreen() {
                 onChangeText={setName}
                 autoCapitalize="words"
                 autoCorrect={false}
+                editable={!isLoading}
               />
             </View>
 
@@ -157,6 +166,7 @@ export default function SignUpScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                editable={!isLoading}
               />
             </View>
 
@@ -172,10 +182,12 @@ export default function SignUpScreen() {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  editable={!isLoading}
                 />
                 <TouchableOpacity
                   style={styles.eyeIcon}
                   onPress={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
                 >
                   <IconSymbol
                     ios_icon_name={showPassword ? 'eye.slash' : 'eye'}
@@ -198,6 +210,7 @@ export default function SignUpScreen() {
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
+                editable={!isLoading}
               />
             </View>
 
@@ -206,6 +219,7 @@ export default function SignUpScreen() {
               <TouchableOpacity
                 style={styles.languageSelector}
                 onPress={() => setShowLanguageModal(true)}
+                disabled={isLoading}
               >
                 <Text style={styles.languageFlag}>{selectedLang.flag}</Text>
                 <Text style={styles.languageText}>{selectedLang.name}</Text>
@@ -246,7 +260,10 @@ export default function SignUpScreen() {
               <Text style={commonStyles.textSecondary}>
                 Already have an account?{' '}
               </Text>
-              <TouchableOpacity onPress={() => router.replace('/auth/sign-in')}>
+              <TouchableOpacity 
+                onPress={() => router.replace('/auth/sign-in')}
+                disabled={isLoading}
+              >
                 <Text style={styles.linkText}>Sign In</Text>
               </TouchableOpacity>
             </View>
