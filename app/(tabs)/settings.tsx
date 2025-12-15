@@ -191,10 +191,10 @@ export default function SettingsScreen() {
           size={80}
           color={colors.textSecondary}
         />
-        <Text style={getTextStyle([commonStyles.subtitle, styles.notAuthTitle])}>
+        <Text style={[getTextStyle(commonStyles.subtitle), styles.notAuthTitle]}>
           Sign In Required
         </Text>
-        <Text style={getTextStyle([commonStyles.textSecondary, styles.notAuthText])}>
+        <Text style={[getTextStyle(commonStyles.textSecondary), styles.notAuthText]}>
           Sign in to access settings
         </Text>
       </View>
@@ -209,8 +209,8 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={getTextStyle(styles.headerTitle)}>Settings</Text>
-          <Text style={getTextStyle(commonStyles.textSecondary)}>
+          <Text style={[getTextStyle(styles.headerTitle), { color: colors.text }]}>Settings</Text>
+          <Text style={[getTextStyle(commonStyles.textSecondary), { color: colors.textSecondary }]}>
             Customize your app experience
           </Text>
         </View>
@@ -224,7 +224,7 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={getTextStyle(styles.sectionTitle)}>Profile</Text>
+            <Text style={[getTextStyle(styles.sectionTitle), { color: colors.text }]}>Profile</Text>
           </View>
 
           <TouchableOpacity
@@ -246,8 +246,8 @@ export default function SettingsScreen() {
               )}
             </View>
             <View style={styles.profileInfo}>
-              <Text style={getTextStyle(styles.profileName)}>{user.name}</Text>
-              <Text style={getTextStyle(styles.profileEmail)}>{user.email}</Text>
+              <Text style={[getTextStyle(styles.profileName), { color: colors.text }]}>{user.name}</Text>
+              <Text style={[getTextStyle(styles.profileEmail), { color: colors.textSecondary }]}>{user.email}</Text>
             </View>
             <IconSymbol
               ios_icon_name="chevron.right"
@@ -267,17 +267,17 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={getTextStyle(styles.sectionTitle)}>Accessibility</Text>
+            <Text style={[getTextStyle(styles.sectionTitle), { color: colors.text }]}>Accessibility</Text>
           </View>
-          <Text style={getTextStyle(styles.sectionDescription)}>
+          <Text style={[getTextStyle(styles.sectionDescription), { color: colors.textSecondary }]}>
             Customize the app to suit your needs
           </Text>
 
           <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
-            <View style={[styles.settingItem, { borderBottomColor: 'transparent' }]}>
+            <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
-                <Text style={getTextStyle(styles.settingTitle)}>Text Size</Text>
-                <Text style={getTextStyle(styles.settingDescription)}>
+                <Text style={[getTextStyle(styles.settingTitle), { color: colors.text }]}>Text Size</Text>
+                <Text style={[getTextStyle(styles.settingDescription), { color: colors.textSecondary }]}>
                   Current: {settings.accessibility.textSize}
                 </Text>
               </View>
@@ -315,14 +315,14 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={getTextStyle(styles.sectionTitle)}>Theme</Text>
+            <Text style={[getTextStyle(styles.sectionTitle), { color: colors.text }]}>Theme</Text>
           </View>
 
           <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
-            <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
+            <View style={[styles.settingItem, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
               <View style={styles.settingInfo}>
-                <Text style={getTextStyle(styles.settingTitle)}>Study Sounds</Text>
-                <Text style={getTextStyle(styles.settingDescription)}>
+                <Text style={[getTextStyle(styles.settingTitle), { color: colors.text }]}>Study Sounds</Text>
+                <Text style={[getTextStyle(styles.settingDescription), { color: colors.textSecondary }]}>
                   Play ambient sounds while studying
                 </Text>
               </View>
@@ -335,10 +335,10 @@ export default function SettingsScreen() {
               />
             </View>
 
-            <View style={[styles.settingItem, { borderBottomColor: 'transparent' }]}>
+            <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
-                <Text style={getTextStyle(styles.settingTitle)}>Eye Strain Reduction</Text>
-                <Text style={getTextStyle(styles.settingDescription)}>
+                <Text style={[getTextStyle(styles.settingTitle), { color: colors.text }]}>Eye Strain Reduction</Text>
+                <Text style={[getTextStyle(styles.settingDescription), { color: colors.textSecondary }]}>
                   Reduce blue light for comfortable reading
                 </Text>
               </View>
@@ -364,15 +364,19 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={getTextStyle(styles.sectionTitle)}>Calendar Notifications</Text>
+            <Text style={[getTextStyle(styles.sectionTitle), { color: colors.text }]}>Calendar Notifications</Text>
           </View>
-          <Text style={getTextStyle(styles.sectionDescription)}>
+          <Text style={[getTextStyle(styles.sectionDescription), { color: colors.textSecondary }]}>
             Get notified about your revision schedule and upcoming events
           </Text>
 
           {!notificationsPermission && (
             <TouchableOpacity
-              style={[styles.permissionBanner, { backgroundColor: colors.warning + '15', borderColor: colors.warning + '30' }]}
+              style={[styles.permissionBanner, { 
+                backgroundColor: colors.warning + '15', 
+                borderColor: colors.warning + '30',
+                borderWidth: 2,
+              }]}
               onPress={requestNotificationPermissions}
             >
               <IconSymbol
@@ -382,10 +386,10 @@ export default function SettingsScreen() {
                 color={colors.warning}
               />
               <View style={styles.permissionBannerContent}>
-                <Text style={getTextStyle(styles.permissionBannerTitle)}>
+                <Text style={[getTextStyle(styles.permissionBannerTitle), { color: colors.text }]}>
                   Notifications Disabled
                 </Text>
-                <Text style={getTextStyle(styles.permissionBannerText)}>
+                <Text style={[getTextStyle(styles.permissionBannerText), { color: colors.textSecondary }]}>
                   Tap to enable notifications
                 </Text>
               </View>
@@ -399,10 +403,10 @@ export default function SettingsScreen() {
           )}
 
           <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
-            <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
+            <View style={[styles.settingItem, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
               <View style={styles.settingInfo}>
-                <Text style={getTextStyle(styles.settingTitle)}>Revision Reminders</Text>
-                <Text style={getTextStyle(styles.settingDescription)}>
+                <Text style={[getTextStyle(styles.settingTitle), { color: colors.text }]}>Revision Reminders</Text>
+                <Text style={[getTextStyle(styles.settingDescription), { color: colors.textSecondary }]}>
                   Get notified when it&apos;s time for scheduled revision sessions
                 </Text>
               </View>
@@ -415,10 +419,10 @@ export default function SettingsScreen() {
               />
             </View>
 
-            <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
+            <View style={[styles.settingItem, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
               <View style={styles.settingInfo}>
-                <Text style={getTextStyle(styles.settingTitle)}>Event Reminders</Text>
-                <Text style={getTextStyle(styles.settingDescription)}>
+                <Text style={[getTextStyle(styles.settingTitle), { color: colors.text }]}>Event Reminders</Text>
+                <Text style={[getTextStyle(styles.settingDescription), { color: colors.textSecondary }]}>
                   Get notified about upcoming events and unavailable dates
                 </Text>
               </View>
@@ -431,10 +435,10 @@ export default function SettingsScreen() {
               />
             </View>
 
-            <View style={[styles.settingItem, { borderBottomColor: 'transparent' }]}>
+            <View style={styles.settingItem}>
               <View style={styles.settingInfo}>
-                <Text style={getTextStyle(styles.settingTitle)}>Daily Study Reminder</Text>
-                <Text style={getTextStyle(styles.settingDescription)}>
+                <Text style={[getTextStyle(styles.settingTitle), { color: colors.text }]}>Daily Study Reminder</Text>
+                <Text style={[getTextStyle(styles.settingDescription), { color: colors.textSecondary }]}>
                   Get a daily reminder to check your revision schedule
                 </Text>
               </View>
@@ -458,33 +462,37 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={getTextStyle(styles.sectionTitle)}>Account</Text>
+            <Text style={[getTextStyle(styles.sectionTitle), { color: colors.text }]}>Account</Text>
           </View>
 
           <View style={[styles.accountInfo, { backgroundColor: colors.card }]}>
             <View style={styles.accountInfoRow}>
-              <Text style={getTextStyle(styles.accountInfoLabel)}>Email:</Text>
-              <Text style={getTextStyle(styles.accountInfoValue)}>{user.email}</Text>
+              <Text style={[getTextStyle(styles.accountInfoLabel), { color: colors.textSecondary }]}>Email:</Text>
+              <Text style={[getTextStyle(styles.accountInfoValue), { color: colors.text }]}>{user.email}</Text>
             </View>
             <View style={styles.accountInfoRow}>
-              <Text style={getTextStyle(styles.accountInfoLabel)}>Plan:</Text>
-              <Text style={getTextStyle([
-                styles.accountInfoValue,
-                user.isPremium && { color: '#FFD700' }
-              ])}>
+              <Text style={[getTextStyle(styles.accountInfoLabel), { color: colors.textSecondary }]}>Plan:</Text>
+              <Text style={[
+                getTextStyle(styles.accountInfoValue),
+                { color: user.isPremium ? '#FFD700' : colors.text }
+              ]}>
                 {user.isPremium ? 'Premium' : 'Free'}
               </Text>
             </View>
             <View style={styles.accountInfoRow}>
-              <Text style={getTextStyle(styles.accountInfoLabel)}>Member Since:</Text>
-              <Text style={getTextStyle(styles.accountInfoValue)}>
+              <Text style={[getTextStyle(styles.accountInfoLabel), { color: colors.textSecondary }]}>Member Since:</Text>
+              <Text style={[getTextStyle(styles.accountInfoValue), { color: colors.text }]}>
                 {new Date(user.signupDate).toLocaleDateString()}
               </Text>
             </View>
           </View>
 
           <TouchableOpacity
-            style={[styles.signOutButton, { backgroundColor: colors.error + '15', borderColor: colors.error + '30' }]}
+            style={[styles.signOutButton, { 
+              backgroundColor: colors.error + '15', 
+              borderColor: colors.error + '30',
+              borderWidth: 2,
+            }]}
             onPress={handleSignOut}
           >
             <IconSymbol
@@ -493,7 +501,7 @@ export default function SettingsScreen() {
               size={20}
               color={colors.error}
             />
-            <Text style={getTextStyle([styles.signOutButtonText, { color: colors.error }])}>Sign Out</Text>
+            <Text style={[getTextStyle(styles.signOutButtonText), { color: colors.error }]}>Sign Out</Text>
           </TouchableOpacity>
         </View>
 
@@ -506,12 +514,12 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={getTextStyle(styles.sectionTitle)}>About</Text>
+            <Text style={[getTextStyle(styles.sectionTitle), { color: colors.text }]}>About</Text>
           </View>
 
           <View style={[styles.appInfo, { backgroundColor: colors.card }]}>
-            <Text style={getTextStyle(styles.appInfoText)}>SmartStudy AI v1.0.0</Text>
-            <Text style={getTextStyle(styles.appInfoSubtext)}>
+            <Text style={[getTextStyle(styles.appInfoText), { color: colors.text }]}>SmartStudy AI v1.0.0</Text>
+            <Text style={[getTextStyle(styles.appInfoSubtext), { color: colors.textSecondary }]}>
               AI-powered learning platform for GCSE & A-Level students
             </Text>
           </View>
@@ -528,7 +536,7 @@ export default function SettingsScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={styles.modalHeader}>
-              <Text style={getTextStyle(styles.modalTitle)}>Edit Profile</Text>
+              <Text style={[getTextStyle(styles.modalTitle), { color: colors.text }]}>Edit Profile</Text>
               <TouchableOpacity onPress={() => setProfileModalVisible(false)}>
                 <IconSymbol
                   ios_icon_name="xmark"
@@ -550,15 +558,23 @@ export default function SettingsScreen() {
                     size={40}
                     color={colors.textSecondary}
                   />
-                  <Text style={getTextStyle(styles.imagePickerText)}>Tap to add photo</Text>
+                  <Text style={[getTextStyle(styles.imagePickerText), { color: colors.textSecondary }]}>Tap to add photo</Text>
                 </View>
               )}
             </TouchableOpacity>
 
             <View style={styles.inputContainer}>
-              <Text style={getTextStyle(styles.inputLabel)}>Name</Text>
+              <Text style={[getTextStyle(styles.inputLabel), { color: colors.text }]}>Name</Text>
               <TextInput
-                style={getTextStyle([styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }])}
+                style={[
+                  getTextStyle(styles.input), 
+                  { 
+                    backgroundColor: colors.background, 
+                    borderColor: colors.border, 
+                    color: colors.text,
+                    borderWidth: 1,
+                  }
+                ]}
                 value={editName}
                 onChangeText={setEditName}
                 placeholder="Enter your name"
@@ -571,13 +587,13 @@ export default function SettingsScreen() {
                 style={[styles.modalButton, styles.modalButtonCancel, { backgroundColor: colors.border }]}
                 onPress={() => setProfileModalVisible(false)}
               >
-                <Text style={getTextStyle([styles.modalButtonTextCancel, { color: colors.text }])}>Cancel</Text>
+                <Text style={[getTextStyle(styles.modalButtonTextCancel), { color: colors.text }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonSave, { backgroundColor: colors.primary }]}
                 onPress={saveProfile}
               >
-                <Text style={getTextStyle(styles.modalButtonTextSave)}>Save</Text>
+                <Text style={[getTextStyle(styles.modalButtonTextSave), { color: '#FFFFFF' }]}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -639,12 +655,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   profileImage: {
-    width: '100%',
-    height: '100%',
+    width: 64,
+    height: 64,
   },
   profileImagePlaceholder: {
-    width: '100%',
-    height: '100%',
+    width: 64,
+    height: 64,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -665,7 +681,6 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderRadius: 12,
-    borderWidth: 2,
     marginBottom: 16,
   },
   permissionBannerContent: {
@@ -688,7 +703,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    borderBottomWidth: 1,
   },
   settingInfo: {
     flex: 1,
@@ -742,7 +756,6 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 16,
     borderRadius: 12,
-    borderWidth: 2,
   },
   signOutButtonText: {
     fontSize: 16,
@@ -825,7 +838,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    borderWidth: 1,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -846,6 +858,5 @@ const styles = StyleSheet.create({
   modalButtonTextSave: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
 });
