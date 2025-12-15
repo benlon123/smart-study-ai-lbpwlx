@@ -603,17 +603,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      console.log('Sign out initiated');
+      console.log('=== Sign out process started ===');
       
-      // Clear current session immediately
+      // First, clear the user state immediately
+      console.log('Clearing user state...');
       setUser(null);
       
       // Clear saved credentials if biometric is not enabled
       if (!biometricEnabled) {
         try {
+          console.log('Clearing saved credentials...');
           await SecureStore.deleteItemAsync('saved_email');
           await SecureStore.deleteItemAsync('saved_password');
-          console.log('Cleared saved credentials');
+          console.log('Saved credentials cleared');
         } catch (error) {
           console.error('Error clearing credentials:', error);
         }
@@ -621,25 +623,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Remove current user from AsyncStorage
       try {
+        console.log('Clearing current user from AsyncStorage...');
         await AsyncStorage.removeItem(CURRENT_USER_KEY);
-        console.log('Cleared current user from storage');
+        console.log('Current user cleared from storage');
       } catch (error) {
         console.error('Error clearing current user:', error);
       }
       
-      console.log('User signed out successfully');
+      console.log('=== Sign out completed successfully ===');
       
-      // Navigate to home screen which will show the auth buttons
+      // Navigate to home screen after a short delay to ensure state is updated
+      console.log('Navigating to home screen...');
       setTimeout(() => {
-        router.replace('/(tabs)/(home)/');
-      }, 100);
+        try {
+          router.replace('/(tabs)/(home)/');
+          console.log('Navigation to home screen completed');
+        } catch (navError) {
+          console.error('Navigation error:', navError);
+        }
+      }, 200);
+      
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('=== Sign out error ===', error);
       // Even if there's an error, clear the user state and navigate
       setUser(null);
       setTimeout(() => {
-        router.replace('/(tabs)/(home)/');
-      }, 100);
+        try {
+          router.replace('/(tabs)/(home)/');
+        } catch (navError) {
+          console.error('Fallback navigation error:', navError);
+        }
+      }, 200);
     }
   };
 

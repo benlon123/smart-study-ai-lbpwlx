@@ -101,8 +101,14 @@ export default function SettingsScreen() {
           text: 'Sign Out',
           style: 'destructive',
           onPress: async () => {
-            await signOut();
-            router.replace('/(tabs)/(home)/');
+            console.log('Sign out button pressed in settings');
+            try {
+              await signOut();
+              console.log('Sign out completed successfully');
+            } catch (error) {
+              console.error('Error during sign out:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
           },
         },
       ]
