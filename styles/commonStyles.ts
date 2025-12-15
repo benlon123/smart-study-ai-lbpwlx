@@ -16,6 +16,22 @@ export const colors = {
   warning: '#FF9800',           // Orange for warnings
 };
 
+// High contrast colors
+export const highContrastColors = {
+  background: '#FFFFFF',        // Pure white
+  text: '#000000',              // Pure black
+  textSecondary: '#333333',     // Dark grey
+  primary: '#0000FF',           // Pure blue
+  secondary: '#4B0082',         // Indigo
+  accent: '#FF0000',            // Pure red
+  card: '#FFFFFF',              // White
+  highlight: '#FFD700',         // Gold
+  border: '#000000',            // Black borders
+  success: '#008000',           // Pure green
+  error: '#FF0000',             // Pure red
+  warning: '#FFA500',           // Orange
+};
+
 export const buttonStyles = StyleSheet.create({
   primary: {
     backgroundColor: colors.primary,
@@ -160,3 +176,39 @@ export const commonStyles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+// Helper function to get colors based on settings
+export const getColors = (highContrast: boolean) => {
+  return highContrast ? highContrastColors : colors;
+};
+
+// Helper function to get text style with accessibility settings
+export const getTextStyle = (
+  baseStyle: any,
+  dyslexiaFont: boolean,
+  textSizeMultiplier: number,
+  highContrast: boolean
+) => {
+  const style: any = { ...baseStyle };
+  
+  if (dyslexiaFont) {
+    style.fontFamily = 'OpenDyslexic';
+  }
+  
+  if (style.fontSize) {
+    style.fontSize = style.fontSize * textSizeMultiplier;
+  }
+  
+  if (highContrast && style.color) {
+    // Map colors to high contrast equivalents
+    if (style.color === colors.text) {
+      style.color = highContrastColors.text;
+    } else if (style.color === colors.textSecondary) {
+      style.color = highContrastColors.textSecondary;
+    } else if (style.color === colors.primary) {
+      style.color = highContrastColors.primary;
+    }
+  }
+  
+  return style;
+};

@@ -18,7 +18,7 @@ import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors as defaultColors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 
 const NOTIFICATION_SETTINGS_KEY = '@smartstudy_notification_settings';
@@ -32,7 +32,7 @@ interface NotificationSettings {
 
 export default function SettingsScreen() {
   const { user, signOut, updateUser } = useAuth();
-  const { settings, toggleDyslexiaFont, toggleHighContrast, setTextSize, toggleStudySounds, setCustomColors } = useSettings();
+  const { settings, toggleDyslexiaFont, toggleHighContrast, setTextSize, toggleStudySounds, setCustomColors, getColors, getTextStyle } = useSettings();
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
     revisionReminders: false,
     eventReminders: false,
@@ -44,6 +44,9 @@ export default function SettingsScreen() {
   const [editName, setEditName] = useState('');
   const [profileImage, setProfileImage] = useState<string | undefined>(undefined);
 
+  // Get current colors based on high contrast setting
+  const colors = getColors();
+
   useEffect(() => {
     if (user) {
       loadNotificationSettings();
@@ -52,6 +55,15 @@ export default function SettingsScreen() {
       setProfileImage(user.avatar);
     }
   }, [user?.id]);
+
+  // Log settings changes for debugging
+  useEffect(() => {
+    console.log('Current accessibility settings:', {
+      dyslexiaFont: settings.accessibility.dyslexiaFont,
+      highContrast: settings.accessibility.highContrast,
+      textSize: settings.accessibility.textSize,
+    });
+  }, [settings.accessibility]);
 
   const loadNotificationSettings = async () => {
     try {
@@ -172,19 +184,43 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleToggleDyslexiaFont = () => {
+    console.log('Dyslexia font toggle pressed');
+    toggleDyslexiaFont();
+    Alert.alert(
+      'Dyslexia Font',
+      settings.accessibility.dyslexiaFont 
+        ? 'Dyslexia-friendly font has been disabled' 
+        : 'Dyslexia-friendly font has been enabled. Text will now use OpenDyslexic font with increased spacing.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleToggleHighContrast = () => {
+    console.log('High contrast toggle pressed');
+    toggleHighContrast();
+    Alert.alert(
+      'High Contrast',
+      settings.accessibility.highContrast 
+        ? 'High contrast mode has been disabled' 
+        : 'High contrast mode has been enabled. Colors will now have stronger contrast for better visibility.',
+      [{ text: 'OK' }]
+    );
+  };
+
   if (!user) {
     return (
-      <View style={[commonStyles.container, commonStyles.centerContent]}>
+      <View style={[commonStyles.container, commonStyles.centerContent, { backgroundColor: colors.background }]}>
         <IconSymbol
           ios_icon_name="gear"
           android_material_icon_name="settings"
           size={80}
           color={colors.textSecondary}
         />
-        <Text style={[commonStyles.subtitle, styles.notAuthTitle]}>
+        <Text style={getTextStyle([commonStyles.subtitle, styles.notAuthTitle])}>
           Sign In Required
         </Text>
-        <Text style={[commonStyles.textSecondary, styles.notAuthText]}>
+        <Text style={getTextStyle([commonStyles.textSecondary, styles.notAuthText])}>
           Sign in to access settings
         </Text>
       </View>
@@ -192,15 +228,15 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={commonStyles.container}>
+    <View style={[commonStyles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Settings</Text>
-          <Text style={commonStyles.textSecondary}>
+          <Text style={getTextStyle(styles.headerTitle)}>Settings</Text>
+          <Text style={getTextStyle(commonStyles.textSecondary)}>
             Customize your app experience
           </Text>
         </View>
@@ -214,18 +250,18 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={styles.sectionTitle}>Profile</Text>
+            <Text style={getTextStyle(styles.sectionTitle)}>Profile</Text>
           </View>
 
           <TouchableOpacity
-            style={styles.profileCard}
+            style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => setProfileModalVisible(true)}
           >
             <View style={styles.profileImageContainer}>
               {profileImage ? (
                 <Image source={{ uri: profileImage }} style={styles.profileImage} />
               ) : (
-                <View style={styles.profileImagePlaceholder}>
+                <View style={[styles.profileImagePlaceholder, { backgroundColor: colors.border }]}>
                   <IconSymbol
                     ios_icon_name="person.fill"
                     android_material_icon_name="person"
@@ -236,8 +272,8 @@ export default function SettingsScreen() {
               )}
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{user.name}</Text>
-              <Text style={styles.profileEmail}>{user.email}</Text>
+              <Text style={getTextStyle(styles.profileName)}>{user.name}</Text>
+              <Text style={getTextStyle(styles.profileEmail)}>{user.email}</Text>
             </View>
             <IconSymbol
               ios_icon_name="chevron.right"
@@ -257,47 +293,55 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={styles.sectionTitle}>Accessibility</Text>
+            <Text style={getTextStyle(styles.sectionTitle)}>Accessibility</Text>
           </View>
-          <Text style={styles.sectionDescription}>
+          <Text style={getTextStyle(styles.sectionDescription)}>
             Customize the app to suit your needs
           </Text>
 
-          <View style={styles.settingsList}>
-            <View style={styles.settingItem}>
+          <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
+            <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Dyslexia-Friendly Font</Text>
-                <Text style={styles.settingDescription}>
-                  Use OpenDyslexic font for easier reading
+                <Text style={getTextStyle(styles.settingTitle)}>Dyslexia-Friendly Font</Text>
+                <Text style={getTextStyle(styles.settingDescription)}>
+                  Use OpenDyslexic font with increased spacing for easier reading
+                </Text>
+                <Text style={getTextStyle([styles.settingStatus, { color: settings.accessibility.dyslexiaFont ? colors.success : colors.textSecondary }])}>
+                  Status: {settings.accessibility.dyslexiaFont ? 'Enabled ✓' : 'Disabled'}
                 </Text>
               </View>
               <Switch
                 value={settings.accessibility.dyslexiaFont}
-                onValueChange={toggleDyslexiaFont}
+                onValueChange={handleToggleDyslexiaFont}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#FFFFFF"
+                ios_backgroundColor={colors.border}
               />
             </View>
 
-            <View style={styles.settingItem}>
+            <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>High Contrast</Text>
-                <Text style={styles.settingDescription}>
-                  Increase contrast for better visibility
+                <Text style={getTextStyle(styles.settingTitle)}>High Contrast</Text>
+                <Text style={getTextStyle(styles.settingDescription)}>
+                  Increase contrast for better visibility with stronger colors
+                </Text>
+                <Text style={getTextStyle([styles.settingStatus, { color: settings.accessibility.highContrast ? colors.success : colors.textSecondary }])}>
+                  Status: {settings.accessibility.highContrast ? 'Enabled ✓' : 'Disabled'}
                 </Text>
               </View>
               <Switch
                 value={settings.accessibility.highContrast}
-                onValueChange={toggleHighContrast}
+                onValueChange={handleToggleHighContrast}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#FFFFFF"
+                ios_backgroundColor={colors.border}
               />
             </View>
 
-            <View style={styles.settingItem}>
+            <View style={[styles.settingItem, { borderBottomColor: 'transparent' }]}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Text Size</Text>
-                <Text style={styles.settingDescription}>
+                <Text style={getTextStyle(styles.settingTitle)}>Text Size</Text>
+                <Text style={getTextStyle(styles.settingDescription)}>
                   Current: {settings.accessibility.textSize}
                 </Text>
               </View>
@@ -307,14 +351,14 @@ export default function SettingsScreen() {
                     key={size}
                     style={[
                       styles.textSizeButton,
-                      settings.accessibility.textSize === size && styles.textSizeButtonActive,
+                      { backgroundColor: settings.accessibility.textSize === size ? colors.primary : colors.border },
                     ]}
                     onPress={() => setTextSize(size)}
                   >
                     <Text
                       style={[
                         styles.textSizeButtonText,
-                        settings.accessibility.textSize === size && styles.textSizeButtonTextActive,
+                        { color: settings.accessibility.textSize === size ? '#FFFFFF' : colors.textSecondary },
                       ]}
                     >
                       {size === 'extra-large' ? 'XL' : size.charAt(0).toUpperCase()}
@@ -335,14 +379,14 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={styles.sectionTitle}>Theme</Text>
+            <Text style={getTextStyle(styles.sectionTitle)}>Theme</Text>
           </View>
 
-          <View style={styles.settingsList}>
-            <View style={styles.settingItem}>
+          <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
+            <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Study Sounds</Text>
-                <Text style={styles.settingDescription}>
+                <Text style={getTextStyle(styles.settingTitle)}>Study Sounds</Text>
+                <Text style={getTextStyle(styles.settingDescription)}>
                   Play ambient sounds while studying
                 </Text>
               </View>
@@ -351,24 +395,25 @@ export default function SettingsScreen() {
                 onValueChange={toggleStudySounds}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#FFFFFF"
+                ios_backgroundColor={colors.border}
               />
             </View>
 
-            <View style={styles.settingItem}>
+            <View style={[styles.settingItem, { borderBottomColor: 'transparent' }]}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Eye Strain Reduction</Text>
-                <Text style={styles.settingDescription}>
+                <Text style={getTextStyle(styles.settingTitle)}>Eye Strain Reduction</Text>
+                <Text style={getTextStyle(styles.settingDescription)}>
                   Reduce blue light for comfortable reading
                 </Text>
               </View>
               <Switch
                 value={settings.theme.eyeStrainReduction}
                 onValueChange={() => {
-                  // Toggle eye strain reduction
                   console.log('Eye strain reduction toggled');
                 }}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#FFFFFF"
+                ios_backgroundColor={colors.border}
               />
             </View>
           </View>
@@ -383,15 +428,15 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={styles.sectionTitle}>Calendar Notifications</Text>
+            <Text style={getTextStyle(styles.sectionTitle)}>Calendar Notifications</Text>
           </View>
-          <Text style={styles.sectionDescription}>
+          <Text style={getTextStyle(styles.sectionDescription)}>
             Get notified about your revision schedule and upcoming events
           </Text>
 
           {!notificationsPermission && (
             <TouchableOpacity
-              style={styles.permissionBanner}
+              style={[styles.permissionBanner, { backgroundColor: colors.warning + '15', borderColor: colors.warning + '30' }]}
               onPress={requestNotificationPermissions}
             >
               <IconSymbol
@@ -401,10 +446,10 @@ export default function SettingsScreen() {
                 color={colors.warning}
               />
               <View style={styles.permissionBannerContent}>
-                <Text style={styles.permissionBannerTitle}>
+                <Text style={getTextStyle(styles.permissionBannerTitle)}>
                   Notifications Disabled
                 </Text>
-                <Text style={styles.permissionBannerText}>
+                <Text style={getTextStyle(styles.permissionBannerText)}>
                   Tap to enable notifications
                 </Text>
               </View>
@@ -417,11 +462,11 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           )}
 
-          <View style={styles.settingsList}>
-            <View style={styles.settingItem}>
+          <View style={[styles.settingsList, { backgroundColor: colors.card }]}>
+            <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Revision Reminders</Text>
-                <Text style={styles.settingDescription}>
+                <Text style={getTextStyle(styles.settingTitle)}>Revision Reminders</Text>
+                <Text style={getTextStyle(styles.settingDescription)}>
                   Get notified when it&apos;s time for scheduled revision sessions
                 </Text>
               </View>
@@ -430,13 +475,14 @@ export default function SettingsScreen() {
                 onValueChange={() => handleToggleSetting('revisionReminders')}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#FFFFFF"
+                ios_backgroundColor={colors.border}
               />
             </View>
 
-            <View style={styles.settingItem}>
+            <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Event Reminders</Text>
-                <Text style={styles.settingDescription}>
+                <Text style={getTextStyle(styles.settingTitle)}>Event Reminders</Text>
+                <Text style={getTextStyle(styles.settingDescription)}>
                   Get notified about upcoming events and unavailable dates
                 </Text>
               </View>
@@ -445,13 +491,14 @@ export default function SettingsScreen() {
                 onValueChange={() => handleToggleSetting('eventReminders')}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#FFFFFF"
+                ios_backgroundColor={colors.border}
               />
             </View>
 
-            <View style={styles.settingItem}>
+            <View style={[styles.settingItem, { borderBottomColor: 'transparent' }]}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Daily Study Reminder</Text>
-                <Text style={styles.settingDescription}>
+                <Text style={getTextStyle(styles.settingTitle)}>Daily Study Reminder</Text>
+                <Text style={getTextStyle(styles.settingDescription)}>
                   Get a daily reminder to check your revision schedule
                 </Text>
               </View>
@@ -460,6 +507,7 @@ export default function SettingsScreen() {
                 onValueChange={() => handleToggleSetting('dailyReminder')}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor="#FFFFFF"
+                ios_backgroundColor={colors.border}
               />
             </View>
           </View>
@@ -474,33 +522,33 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={styles.sectionTitle}>Account</Text>
+            <Text style={getTextStyle(styles.sectionTitle)}>Account</Text>
           </View>
 
-          <View style={styles.accountInfo}>
+          <View style={[styles.accountInfo, { backgroundColor: colors.card }]}>
             <View style={styles.accountInfoRow}>
-              <Text style={styles.accountInfoLabel}>Email:</Text>
-              <Text style={styles.accountInfoValue}>{user.email}</Text>
+              <Text style={getTextStyle(styles.accountInfoLabel)}>Email:</Text>
+              <Text style={getTextStyle(styles.accountInfoValue)}>{user.email}</Text>
             </View>
             <View style={styles.accountInfoRow}>
-              <Text style={styles.accountInfoLabel}>Plan:</Text>
-              <Text style={[
+              <Text style={getTextStyle(styles.accountInfoLabel)}>Plan:</Text>
+              <Text style={getTextStyle([
                 styles.accountInfoValue,
-                user.isPremium && styles.premiumText
-              ]}>
+                user.isPremium && { color: '#FFD700' }
+              ])}>
                 {user.isPremium ? 'Premium' : 'Free'}
               </Text>
             </View>
             <View style={styles.accountInfoRow}>
-              <Text style={styles.accountInfoLabel}>Member Since:</Text>
-              <Text style={styles.accountInfoValue}>
+              <Text style={getTextStyle(styles.accountInfoLabel)}>Member Since:</Text>
+              <Text style={getTextStyle(styles.accountInfoValue)}>
                 {new Date(user.signupDate).toLocaleDateString()}
               </Text>
             </View>
           </View>
 
           <TouchableOpacity
-            style={styles.signOutButton}
+            style={[styles.signOutButton, { backgroundColor: colors.error + '15', borderColor: colors.error + '30' }]}
             onPress={handleSignOut}
           >
             <IconSymbol
@@ -509,7 +557,7 @@ export default function SettingsScreen() {
               size={20}
               color={colors.error}
             />
-            <Text style={styles.signOutButtonText}>Sign Out</Text>
+            <Text style={getTextStyle([styles.signOutButtonText, { color: colors.error }])}>Sign Out</Text>
           </TouchableOpacity>
         </View>
 
@@ -522,12 +570,12 @@ export default function SettingsScreen() {
               size={24}
               color={colors.primary}
             />
-            <Text style={styles.sectionTitle}>About</Text>
+            <Text style={getTextStyle(styles.sectionTitle)}>About</Text>
           </View>
 
-          <View style={styles.appInfo}>
-            <Text style={styles.appInfoText}>SmartStudy AI v1.0.0</Text>
-            <Text style={styles.appInfoSubtext}>
+          <View style={[styles.appInfo, { backgroundColor: colors.card }]}>
+            <Text style={getTextStyle(styles.appInfoText)}>SmartStudy AI v1.0.0</Text>
+            <Text style={getTextStyle(styles.appInfoSubtext)}>
               AI-powered learning platform for GCSE & A-Level students
             </Text>
           </View>
@@ -542,9 +590,9 @@ export default function SettingsScreen() {
         onRequestClose={() => setProfileModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <Text style={getTextStyle(styles.modalTitle)}>Edit Profile</Text>
               <TouchableOpacity onPress={() => setProfileModalVisible(false)}>
                 <IconSymbol
                   ios_icon_name="xmark"
@@ -559,22 +607,22 @@ export default function SettingsScreen() {
               {profileImage ? (
                 <Image source={{ uri: profileImage }} style={styles.modalProfileImage} />
               ) : (
-                <View style={styles.modalProfileImagePlaceholder}>
+                <View style={[styles.modalProfileImagePlaceholder, { backgroundColor: colors.border }]}>
                   <IconSymbol
                     ios_icon_name="camera.fill"
                     android_material_icon_name="camera-alt"
                     size={40}
                     color={colors.textSecondary}
                   />
-                  <Text style={styles.imagePickerText}>Tap to add photo</Text>
+                  <Text style={getTextStyle(styles.imagePickerText)}>Tap to add photo</Text>
                 </View>
               )}
             </TouchableOpacity>
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Name</Text>
+              <Text style={getTextStyle(styles.inputLabel)}>Name</Text>
               <TextInput
-                style={styles.input}
+                style={getTextStyle([styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }])}
                 value={editName}
                 onChangeText={setEditName}
                 placeholder="Enter your name"
@@ -584,16 +632,16 @@ export default function SettingsScreen() {
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
+                style={[styles.modalButton, styles.modalButtonCancel, { backgroundColor: colors.border }]}
                 onPress={() => setProfileModalVisible(false)}
               >
-                <Text style={styles.modalButtonTextCancel}>Cancel</Text>
+                <Text style={getTextStyle([styles.modalButtonTextCancel, { color: colors.text }])}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSave]}
+                style={[styles.modalButton, styles.modalButtonSave, { backgroundColor: colors.primary }]}
                 onPress={saveProfile}
               >
-                <Text style={styles.modalButtonTextSave}>Save</Text>
+                <Text style={getTextStyle(styles.modalButtonTextSave)}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -619,7 +667,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: colors.text,
     marginBottom: 4,
   },
   section: {
@@ -635,21 +682,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.text,
   },
   sectionDescription: {
     fontSize: 14,
     lineHeight: 20,
-    color: colors.textSecondary,
     marginBottom: 16,
   },
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
     padding: 16,
     borderRadius: 16,
     gap: 16,
+    borderWidth: 1,
   },
   profileImageContainer: {
     width: 64,
@@ -664,7 +709,6 @@ const styles = StyleSheet.create({
   profileImagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -674,22 +718,18 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.text,
     marginBottom: 4,
   },
   profileEmail: {
     fontSize: 14,
-    color: colors.textSecondary,
   },
   permissionBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: colors.warning + '15',
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.warning + '30',
     marginBottom: 16,
   },
   permissionBannerContent: {
@@ -698,15 +738,12 @@ const styles = StyleSheet.create({
   permissionBannerTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
     marginBottom: 2,
   },
   permissionBannerText: {
     fontSize: 12,
-    color: colors.textSecondary,
   },
   settingsList: {
-    backgroundColor: colors.card,
     borderRadius: 16,
     overflow: 'hidden',
   },
@@ -716,7 +753,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   settingInfo: {
     flex: 1,
@@ -725,13 +761,17 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 13,
     lineHeight: 18,
-    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  settingStatus: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
   },
   textSizeButtons: {
     flexDirection: 'row',
@@ -741,23 +781,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  textSizeButtonActive: {
-    backgroundColor: colors.primary,
   },
   textSizeButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  textSizeButtonTextActive: {
-    color: '#FFFFFF',
   },
   accountInfo: {
-    backgroundColor: colors.card,
     padding: 20,
     borderRadius: 16,
     marginBottom: 16,
@@ -769,34 +800,25 @@ const styles = StyleSheet.create({
   },
   accountInfoLabel: {
     fontSize: 14,
-    color: colors.textSecondary,
   },
   accountInfoValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
-  },
-  premiumText: {
-    color: '#FFD700',
   },
   signOutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.error + '15',
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.error + '30',
   },
   signOutButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.error,
   },
   appInfo: {
-    backgroundColor: colors.card,
     padding: 20,
     borderRadius: 16,
     alignItems: 'center',
@@ -804,12 +826,10 @@ const styles = StyleSheet.create({
   appInfoText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
     marginBottom: 4,
   },
   appInfoSubtext: {
     fontSize: 13,
-    color: colors.textSecondary,
     textAlign: 'center',
   },
   notAuthTitle: {
@@ -827,7 +847,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 24,
     width: '100%',
@@ -842,7 +861,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: colors.text,
   },
   imagePickerButton: {
     alignSelf: 'center',
@@ -857,14 +875,12 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
   imagePickerText: {
     fontSize: 12,
-    color: colors.textSecondary,
     marginTop: 4,
   },
   inputContainer: {
@@ -873,17 +889,13 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: colors.background,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: colors.text,
     borderWidth: 1,
-    borderColor: colors.border,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -895,16 +907,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  modalButtonCancel: {
-    backgroundColor: colors.border,
-  },
-  modalButtonSave: {
-    backgroundColor: colors.primary,
-  },
+  modalButtonCancel: {},
+  modalButtonSave: {},
   modalButtonTextCancel: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
   },
   modalButtonTextSave: {
     fontSize: 16,

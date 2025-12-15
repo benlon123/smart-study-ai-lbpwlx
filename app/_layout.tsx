@@ -1,5 +1,7 @@
 
 import { Stack } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { View, Text } from 'react-native';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LessonProvider } from '@/contexts/LessonContext';
 import { SettingsProvider } from '@/contexts/SettingsContext';
