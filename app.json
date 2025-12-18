@@ -2,7 +2,7 @@
 {
   "expo": {
     "name": "SmartStudy AI",
-    "slug": "smartstudy-ai",
+    "slug": "SmartStudy AI",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/final_quest_240x240.png",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourname.smartstudyai",
+      "bundleIdentifier": "com.ben1321.smartstudyai",
       "buildNumber": "1",
       "icon": "./assets/images/final_quest_240x240.png",
       "infoPlist": {
@@ -31,7 +31,7 @@
       },
       "icon": "./assets/images/final_quest_240x240.png",
       "edgeToEdgeEnabled": true,
-      "package": "com.yourname.smartstudyai",
+      "package": "com.ben1321.smartstudyai",
       "versionCode": 1,
       "permissions": []
     },
@@ -51,5 +51,5 @@
       "router": {}
     }
   },
-  "scheme": "smartstudyai"
+  "scheme": "SmartStudy AI"
 }
